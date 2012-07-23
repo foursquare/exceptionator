@@ -1,0 +1,80 @@
+{
+  "incoming": {
+    "filters": [
+      {
+        "order": ["filterNot", "deny", "allow"],
+        "filterNot": {
+          "bt": [
+            "^sun.reflect.Generated"
+          ]
+        },
+        "deny": {
+          "h": [
+            "^dev-"
+          ],
+          "msgs": [
+          ]
+        },
+        "allow": {
+          "msgs": [".*"]
+        }
+      }
+    ],
+
+    "savefilters": [
+      "com.foursquare.exceptionator.filter.concrete.ConfiguredIncomingFilter",
+      "com.foursquare.exceptionator.filter.concrete.IncomingTagsFilter",
+      "com.foursquare.exceptionator.filter.concrete.AllBucketFilter",
+      "com.foursquare.exceptionator.filter.concrete.StackBucketFilter",
+      "com.foursquare.exceptionator.filter.concrete.StackPrefixBucketFilter",
+      "com.foursquare.exceptionator.filter.concrete.VersionBucketFilter",
+      "com.foursquare.exceptionator.filter.concrete.SignificantKeywordsFilter",
+      "com.foursquare.exceptionator.filter.concrete.TagsKeywordFilter"
+    ]
+
+  },
+
+  "rollingRank": {
+    "tokenizers": "(?:\\s|[./,:\"{}$\\-\\(\\)\\[\\]])+",
+    "filterNot": "\\d{1,4}|^\\W*$"
+  },
+
+  "backtrace": {
+    "interesting": {
+      "filter": [
+        "^com.foursquare"
+      ],
+      "filterNot": [
+        "^com.foursquare.rogue",
+        "^com.foursquare.slashem",         
+        "^com.foursquare.boot.MongoSetup\\$FSQueryValidator"
+      ]
+    }
+  },
+
+  "email": {
+    "test": true,
+    "nInteresting": 5,
+    "tls": "true",
+    "host": "smtp.gmail.com",
+    "from": "exceptionator@example.com",
+    "user": "exceptionator@example.com",
+    "routes": [
+      {
+        "order": ["allow"],
+        "allow": {
+          "msgs": [
+            ".*"
+          ]
+        },
+        "to": [
+          "fallback@example.com"
+        ],
+        "cc": []
+      }
+    ]
+  },
+  "git": {
+    "repo": "../../3foursquare.web"
+  }
+}

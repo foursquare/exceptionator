@@ -1,0 +1,122 @@
+// Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
+
+package com.foursquare.exceptionator.model
+
+import com.foursquare.exceptionator.util.Hash
+import net.liftweb.mongodb.record.{BsonRecord, BsonMetaRecord, MongoRecord, MongoMetaRecord, MongoId}
+import net.liftweb.mongodb.record.field.{BsonRecordField, MongoMapField, MongoListField}
+import net.liftweb.record.field._
+import net.liftweb.json._
+import org.bson.types.ObjectId
+import org.joda.time.DateTime
+import com.foursquare.rogue._
+import com.foursquare.rogue.index.{Asc, IndexedRecord}
+import com.foursquare.rogue.LiftRogue._
+
+
+class BucketRecord extends MongoRecord[BucketRecord] {
+  def meta = BucketRecord
+  override def id = this._id.value  
+
+  object _id extends StringField(this, 255) // name:key
+
+  object notices extends MongoListField[BucketRecord, ObjectId](this) {
+    override def name = "ids"
+  }
+
+  object firstSeen extends LongField(this) {
+    override def name = "df"
+  }
+
+  object lastSeen extends LongField(this) {
+    override def name = "dl"
+  }
+
+  object firstVersion extends StringField[BucketRecord](this, 50) {
+    override def name = "vf"
+  }
+
+  object lastVersion extends StringField[BucketRecord](this, 50) {
+    override def name = "vl"
+  }
+
+  object noticeCount extends IntField[BucketRecord](this) {
+    override def name = "n"
+    override def defaultValue = 1
+    // atomically inc via modify clause
+    override def dirty_? = if (value > 1) false else super.dirty_?
+  }
+
+}
+
+object BucketRecord extends BucketRecord with MongoMetaRecord[BucketRecord] with IndexedRecord[BucketRecord] {
+  override def collectionName = "buckets"
+
+  override val mongoIndexList = List(
+    BucketRecord.index(_._id, Asc),
+    BucketRecord.index(_.lastSeen, Asc)) // finding old buckets
+}
+
+object HistogramType extends Enumeration {
+  type HistogramType = Value
+  val Month, Day, Hour = Value
+}
+
+class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
+  def meta = BucketRecordHistogram
+  override def id = this._id.value  
+
+  object _id extends StringField(this, 255) // timePrefix:name:key
+
+  object histogram extends MongoMapField[BucketRecordHistogram, Int](this) {
+    override def name = "h"
+  }
+
+  def bucket = id.substring(id.indexOf(':') + 1)
+
+  def histogramType = id.indexOf(':') match {
+    case 3 => HistogramType.Hour
+    case 2 => HistogramType.Day
+    case 1 => HistogramType.Month
+    case _ => throw new Exception("unexpected id formation %s".format(id))
+  }
+
+  def startTime(now: DateTime) = {
+    val dt = now.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+    histogramType match {
+      case HistogramType.Hour =>
+        dt.withHourOfDay(Hash.fieldNameDecode(id(2).toString))
+          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
+          .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+      case HistogramType.Day =>
+        dt.withHourOfDay(0)
+          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
+          .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+      case HistogramType.Month =>
+        dt.withHourOfDay(0)
+          .withDayOfMonth(1)
+          .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+    }
+  }
+
+  def toEpochMap(now: DateTime): Map[String, Int] = {
+    val start = startTime(now).getMillis
+    val step = histogramType match {
+      case HistogramType.Hour =>  60 * 1000
+      case HistogramType.Day =>   60 * 60 * 1000
+      case HistogramType.Month => 24 * 60 * 60 * 1000
+    }
+    histogram.value.map{ case (k, v) => (start + Hash.fieldNameDecode(k) * step).toString -> v }.toMap
+  }
+}
+
+object BucketRecordHistogram
+    extends BucketRecordHistogram 
+    with MongoMetaRecord[BucketRecordHistogram]
+    with IndexedRecord[BucketRecordHistogram] {
+  override def collectionName = "bucket_histograms"
+
+  override val mongoIndexList = List(
+    BucketRecord.index(_._id, Asc))
+
+}

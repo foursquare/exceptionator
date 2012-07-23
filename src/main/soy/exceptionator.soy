@@ -1,0 +1,172 @@
+{namespace Exceptionator.Soy}
+
+
+/**
+ * a bucket link
+ * @param kw keyword term
+ */
+{template .kwLink}
+  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/search/?q={$kw}', {literal}{trigger: true}{/literal});">
+    {$kw}
+  </a>
+{/template}
+
+/**
+ * a bucket link
+ * @param nm bucket name
+ * @param b bucket
+ */
+{template .bucketLink}
+  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/notices/{$nm}/{$b.k}', {literal}{trigger: true}{/literal});">
+    {$b.k |truncate:10} {if $b.n}({$b.n}){/if}
+  </a>
+{/template}
+
+/**
+ * an exception bucket
+ * @param b The exception bucket
+ */
+{template .bucketBody}
+  <div class="header">First seen at</div>
+  <div class="items"><div class="item">{$b.df_fmt}</div></div>
+  <div class="header">First seen version</div>
+  <div class="items"><div class="item">{$b.vf}</div></div>
+{/template}
+
+/**
+ * an exception notice
+ * @param n The exception notice
+ */
+{template .noticeBody}
+  <div class="header">Message list</div>
+  <div class="items">
+  {foreach $i in $n.msgs}
+    <div class="item">{$i} {if not isLast($i)} Caused by: {/if}</div>
+  {/foreach}
+  </div>
+  <div class="header">Exception list</div>
+  <div class="items">
+  {foreach $i in $n.excs}
+    <div class="item">{$i} {if not isLast($i)} Caused by: {/if}</div>
+  {/foreach}
+  </div>
+  <div class="header">Backtrace</div>
+  <div class="items">
+  {foreach $bt in $n.bt}
+    {foreach $i in $bt}
+      <div class="item">{$i}</div>
+    {/foreach}
+  {/foreach}
+  </div>
+  <div class="header">
+    Matching buckets:
+  </div>
+  <div class="items">
+    {foreach $k in keys($n.bkts)}
+    {if $k != 'all' } 
+    <div class="item">
+      {$n.bkts[$k].friendlyName} - {sp}
+      {call .bucketLink}
+        {param nm: $k /}
+        {param b: $n.bkts[$k] /}
+      {/call}
+    </div>
+    {/if}
+    {/foreach}
+  </div>
+  {if $n.h}
+    <div class="header">Host</div>
+    <div class="items"><div class="item">{$n.h}</div></div>
+  {/if}
+  <div class="header">Version</div>
+  <div class="items"><div class="item">{$n.v}</div></div>
+  <div class="header">Session</div>
+  <div class="items">
+  {foreach $k in keys($n.sess)}
+    <div class="item">{$k}: {$n.sess[$k]}</div>
+  {/foreach}
+  </div>
+  <div class="header">Environment</div>
+  <div class="items">
+  {foreach $k in keys($n.env)}
+    <div class="item">{$k}: {$n.env[$k]}</div>
+  {/foreach}
+  </div>
+  <div class="header">Keywords</div>
+  <div class="items">
+    <div class="item">
+    {foreach $kw in $n.kw}
+      {call .kwLink}
+        {param kw: $kw /}
+      {/call} {sp}
+    {/foreach}
+    </div>
+  </div>
+{/template}
+
+/**
+ * a notice header
+ * @param n The exception notice
+ */
+{template .noticeHeader}
+  <div class="exc_header">
+    {foreach $k in keys($n.bkts)}
+    {if $k != 'all'}
+    <div class="exc_n" onclick="event.cancelBubble = true;">
+      {$n.bkts[$k].friendlyName} - {sp}
+      {call .bucketLink}
+        {param nm: $k /}
+        {param b: $n.bkts[$k] /}
+      {/call}
+    </div>
+    {/if}
+    {/foreach}
+    <div class="timehost">{$n.d_fmt} {if $n.h} on {$n.h}</div> {/if} {$n.msgs[0]}
+  </div>
+{/template}
+
+/**
+ * a notice
+ * @param n The exception
+ */
+{template .notice}
+  {call .noticeHeader data="all" /}
+  <div class="exc_detail" >
+    {call .noticeBody data="all" /}
+  </div>
+{/template}
+
+
+/**
+ * a notice list template
+ * @param id
+ * @param showGraph
+ * @param showList
+ * @param title
+ */
+{template .noticeList}
+  <div id="outer_{$id}">
+    <div class="row">
+      <div class="span16">
+        <h3 id="title_{$id}">{$title}</h3>
+      </div>
+    </div>
+    {if $showGraph}
+    <div class="row">
+      <div class="span16">
+        <div id="plot_{$id}" style="width:940px;height:150px">
+        </div>
+      </div>
+    </div>
+    {/if}
+    {if $showList}
+    <div class="row">
+      <div class="span16">
+        <div id="{$id}">
+        </div>
+      </div>
+    </div>
+    {/if}
+  </div>
+{/template} 
+

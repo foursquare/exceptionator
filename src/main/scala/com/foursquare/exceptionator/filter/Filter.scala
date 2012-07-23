@@ -1,0 +1,51 @@
+// Copyright 2012 Foursquare Labs Inc. All Rights Reserved.
+
+package com.foursquare.exceptionator.filter
+
+import com.foursquare.exceptionator.model.io.{BucketId, Incoming}
+import com.twitter.util.Future
+import com.twitter.finagle.{Service, SimpleFilter}
+import org.bson.types.ObjectId
+
+object FilteredIncoming {
+  def apply(incoming: Incoming): FilteredIncoming = FilteredIncoming(incoming, Set(), Set(), Set())
+}
+
+case class FilteredIncoming(incoming: Incoming, tags: Set[String], keywords: Set[String], buckets: Set[BucketId])
+
+case class ProcessedIncoming(
+  id: Option[ObjectId],
+  incoming: Incoming,
+  tags: Set[String],
+  keywords: Set[String],
+  buckets: Set[BucketId])
+
+trait BucketSpec {
+  def name: String
+  def friendlyName: String
+  def maxRecent: Int
+  def invalidatesFreshness: Boolean
+}
+
+trait Registry {
+  def registerBucket(spec: BucketSpec): Unit
+}
+
+abstract class PreSaveFilter extends SimpleFilter[FilteredIncoming, ProcessedIncoming] {
+  def register(registry: Registry): Unit
+}
+
+class FilteredSaveService(
+    service: Service[FilteredIncoming, ProcessedIncoming],
+    filters: List[PreSaveFilter],
+    registry: Registry)
+    extends Service[FilteredIncoming, ProcessedIncoming] {
+
+  val filteredService = filters.foldRight(service)((f, s) => {
+    f.register(registry)
+    f andThen s
+  })
+
+  def apply(incoming: FilteredIncoming): Future[ProcessedIncoming] = filteredService(incoming)
+}
+
