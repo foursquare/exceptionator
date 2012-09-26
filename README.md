@@ -1,7 +1,7 @@
 Exceptionator
 ===============
 
-An exception aggregator
+An exception aggregator using mongodb.
 
 Usage
 -----
@@ -9,7 +9,7 @@ Usage
     ./sbt assembly
     java -jar target/exceptionator-assembly-3.0.jar
 
-The jar file will run standalone, so just copy it where ever you need it.  Its recommended to customize and copy config.json to the working directory.
+The jar file will run standalone, so just copy it where ever you need it.  Its recommended to customize and copy config.json to the working directory.  The default mongo connection is localhost:27017/test.
 
 
 Options and Defaults
@@ -18,9 +18,11 @@ Configuration is json-based.  A sample config file (just fill in email.pass) is 
 
     -Dconfig=config.json
 
-Default values:
+Some default values to note:
 
     port: 8080
+    db.host: localhost:27017
+    db.name: test
     git.repo: undefined
 
 
