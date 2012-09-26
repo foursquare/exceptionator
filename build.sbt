@@ -1,6 +1,6 @@
 name := "exceptionator"
 
-version := "3.0"
+version := "2.0-beta1"
 
 scalaVersion := "2.9.1"
 
@@ -26,8 +26,6 @@ libraryDependencies ++= Seq(
   "com.twitter"             %% "ostrich"              % "4.10.6",
   "com.typesafe"            %  "config"               % "0.4.1",
   "org.scalaj"              %% "scalaj-collection"    % "1.2",
-  "de.undercouch"           %  "bson4jackson"         % "1.3.0",
-  "org.fusesource.jdbm"     %  "jdbm"                 % "2.0.1",
   "org.joda"                %  "joda-convert"         % "1.1",
   "org.mongodb"             %  "mongo-java-driver"    % "2.7.3",
   "org.scala-tools.testing" %% "specs"                % "1.6.9"     % "test",
