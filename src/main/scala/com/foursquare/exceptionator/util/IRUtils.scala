@@ -26,7 +26,6 @@ class RollingRank (
     windowSize: Int) {
 
   val seenDocs = new AtomicInteger
-  val docs = new AtomicInteger
   val docFrequency = new ConcurrentHashMap[String, AtomicInteger]()
   val window = Array.fill(windowSize)(Iterable[String]())
   Stats.addGauge("ir.%s.docFrequency.size".format(name)) { docFrequency.size() }
@@ -34,14 +33,11 @@ class RollingRank (
 
   def prune(old: Iterable[String]) {
     old.foreach(term => {
-      val decremented: Option[Int] = Option(docFrequency.get(term)).map(_.addAndGet(-1))
+      val decremented: Option[Int] = Option(docFrequency.get(term)).map(_.decrementAndGet)
       if (decremented.exists(_ == 0)) {
         docFrequency.remove(term)
       }
     })
-    if (!old.isEmpty) {
-      docs.addAndGet(-1)
-    }
   }
 
   def rank(doc: String): List[(String, Double)] = {
@@ -52,15 +48,16 @@ class RollingRank (
       .filter(t => filter.map(_.pattern.matcher(t).matches).getOrElse(true)).map(_.toLowerCase)
     val termCounts: Map[String, Int] = terms.toList.groupBy(term => term).map { case (k, v) => k -> v.length }
 
-    val currDocs = docs.addAndGet(1)
-    val windowPos = seenDocs.addAndGet(1) % windowSize
+    val nSeen = seenDocs.getAndIncrement
+    val nCorpus = math.min(nSeen, windowSize)
+    val windowPos = nSeen % windowSize
     prune(window(windowPos))
-    window(currDocs % windowSize) = termCounts.keys
+    window(windowPos) = termCounts.keys
 
     val res = termCounts.toList.map { case (term, count) => {
-      val currDf = Option(docFrequency.putIfAbsent(term, new AtomicInteger(1))).map(_.addAndGet(1)).getOrElse(1)
+      val currDf = Option(docFrequency.putIfAbsent(term, new AtomicInteger(1))).map(_.incrementAndGet).getOrElse(1)
       val tf = count.toDouble / terms.length
-      val idf = math.log(currDocs.toDouble / currDf)
+      val idf = math.log(nCorpus.toDouble / currDf)
       val tfidf: Double = tf * idf
       term -> tfidf
     }}
