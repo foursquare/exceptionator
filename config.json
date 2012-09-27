@@ -29,7 +29,8 @@
       "com.foursquare.exceptionator.filter.concrete.StackPrefixBucketFilter",
       "com.foursquare.exceptionator.filter.concrete.VersionBucketFilter",
       "com.foursquare.exceptionator.filter.concrete.SignificantKeywordsFilter",
-      "com.foursquare.exceptionator.filter.concrete.TagsKeywordFilter"
+      "com.foursquare.exceptionator.filter.concrete.TagsKeywordFilter",
+      "com.foursquare.exceptionator.filter.concrete.BucketsKeywordFilter"
     ]
 
   },

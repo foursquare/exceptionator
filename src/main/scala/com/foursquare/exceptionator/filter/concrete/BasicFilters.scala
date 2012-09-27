@@ -59,3 +59,9 @@ class IncomingTagsFilter extends TagFilter {
 class TagsKeywordFilter extends KeywordFilter {
   def keywords(incoming: FilteredIncoming): Set[String] = incoming.tags
 }
+
+class BucketsKeywordFilter extends KeywordFilter {
+  def keywords(incoming: FilteredIncoming): Set[String] = {
+    incoming.buckets.filterNot(_.name == "all").map(id => "bucket_%s_%s".format(id.name, id.key))
+  }
+}
