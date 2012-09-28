@@ -94,7 +94,7 @@
     $.get('/api/config', function(data) {
       Exceptionator.Config = data;
       Exceptionator.App = new Exceptionator.AppView({el: $('#notice_buckets')});
-      Exceptionator.Router = new Exceptionator.Routing({app: Exceptionator.App});
+      Exceptionator.Router = new Exceptionator.Routing({app: Exceptionator.App, homepage: Exceptionator.Config.homepage});
       Backbone.history.start({pushState: true});
 
       looper = function() {

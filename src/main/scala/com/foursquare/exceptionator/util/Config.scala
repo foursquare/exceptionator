@@ -3,7 +3,7 @@
 package com.foursquare.exceptionator.util
 
 import java.io.File
-import com.typesafe.config.{ConfigException, ConfigFactory}
+import com.typesafe.config.{ConfigException, ConfigFactory, ConfigRenderOptions}
 
 object Config extends Logger {
   def defaultInit() {
@@ -31,5 +31,9 @@ object Config extends Logger {
   }
   def opt[T](f: com.typesafe.config.Config => T): Option[T] = opt(root, f)
 
+  def renderJson(config: com.typesafe.config.Config, path: String): Option[String] = {
+    opt(config, _.getValue(path)).map(_.render(ConfigRenderOptions.concise))
+  }
+  def renderJson(path: String): Option[String] = renderJson(root, path)
 }
 

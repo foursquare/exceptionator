@@ -336,6 +336,7 @@ Exceptionator.AppView = Backbone.View.extend({
 Exceptionator.Routing = Backbone.Router.extend({
   initialize: function(options) {
     this.app = options.app;
+    this.homepageConfig = options.homepage;
   },
 
   routes: {
@@ -358,13 +359,7 @@ Exceptionator.Routing = Backbone.Router.extend({
   },
 
   index: function() {
-    this.route_([
-      {list: {bucketName: 'all'}, view: {showList: false}},
-      {list: {bucketName: 'fresh'}, view: {showList: false}},
-      {list: {bucketName: 'svc'}},
-      {list: {bucketName: 'v'}},
-      {list: {query: '500'}},
-      {list: {bucketName: 's'}}]);
+    this.route_(this.homepageConfig);
   },
 
   search: function(query) {

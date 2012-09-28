@@ -2,7 +2,7 @@
 
 package com.foursquare.exceptionator.service
 
-import com.codahale.jerkson.Json.generate
+import com.codahale.jerkson.Json.{generate, parse}
 import com.foursquare.exceptionator.model.io.{Incoming, Outgoing}
 import com.foursquare.exceptionator.actions.{BucketActions, NoticeActions}
 import com.twitter.finagle.http.{Response, Request}
@@ -95,7 +95,12 @@ class ApiHttpService(
 
   def config = {
     val values = Map(
-      "friendlyNames" -> bucketFriendlyNames) ++
+      "friendlyNames" -> bucketFriendlyNames,
+      "homepage" -> Config.renderJson("web.homepage").map(parse[List[_]](_)).getOrElse(
+        List(
+          Map("list" -> Map("bucketName" -> "all"), "view" -> Map("showList" -> false)),
+          Map("list" -> Map("bucketName" -> "s")
+        )))) ++
       Config.opt(_.getInt("http.port")).map("apiPort" -> _).toMap ++
       Config.opt(_.getString("http.hostname")).map("apiHost" -> _).toMap
     InternalResponse(Future.value(generate(values)))
