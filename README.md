@@ -7,7 +7,7 @@ Usage
 -----
    
     ./sbt assembly
-    java -jar target/exceptionator-assembly-2.0-beta1.jar
+    java -jar target/exceptionator-assembly-2.0-beta2.jar
 
 The jar file will run standalone, so just copy it where ever you need it.  Its recommended to customize and copy config.json to the working directory.  The default mongo connection is localhost:27017/test.
 
