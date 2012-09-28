@@ -1,6 +1,6 @@
 name := "exceptionator"
 
-version := "2.0-beta2"
+version := "2.0-beta4"
 
 scalaVersion := "2.9.1"
 

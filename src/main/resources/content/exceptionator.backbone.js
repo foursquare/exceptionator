@@ -116,19 +116,19 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
       this.bucketKey = options.bucketKey;
       this.bucketName = options.bucketName;
       this.urlPart = '/api/notices/' + this.bucketName + '/' + this.bucketKey + '?';
-      this.id = this.bucketName.replace(/\W/,'_') + '_' + this.bucketKey.replace(/\W/,'_');
+      this.id = this.bucketName.replace(/\W/g,'_') + '_' + this.bucketKey.replace(/\W/g,'_');
       this.title = Exceptionator.Config.friendlyNames[this.bucketName] + ': ' + this.bucketKey;
     } else if (options.bucketName) {
       this.listType = Exceptionator.ListTypes.BUCKET_GROUP;
       this.bucketName = options.bucketName;
       this.urlPart = '/api/notices/' + this.bucketName + '?';
-      this.id = this.bucketName.replace(/\W/,'_');
+      this.id = this.bucketName.replace(/\W/g,'_');
       this.title = Exceptionator.Config.friendlyNames[this.bucketName];
     } else {
       this.query = options.query;
       this.listType = Exceptionator.ListTypes.SEARCH;
       this.urlPart = '/api/search?q=' + encodeURIComponent(this.query) + '&';
-      this.id = '_search_' + this.query.replace(/\W/,'_');
+      this.id = '_search_' + this.query.replace(/\W/g,'_');
       this.title = 'search: ' + this.query;
     }
   },
