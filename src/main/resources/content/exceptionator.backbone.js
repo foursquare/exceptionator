@@ -116,13 +116,13 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
       this.bucketKey = options.bucketKey;
       this.bucketName = options.bucketName;
       this.urlPart = '/api/notices/' + this.bucketName + '/' + this.bucketKey + '?';
-      this.id = this.bucketName + '_' + this.bucketKey;
+      this.id = this.bucketName.replace(/\W/,'_') + '_' + this.bucketKey.replace(/\W/,'_');
       this.title = Exceptionator.Config.friendlyNames[this.bucketName] + ': ' + this.bucketKey;
     } else if (options.bucketName) {
       this.listType = Exceptionator.ListTypes.BUCKET_GROUP;
       this.bucketName = options.bucketName;
       this.urlPart = '/api/notices/' + this.bucketName + '?';
-      this.id = this.bucketName;
+      this.id = this.bucketName.replace(/\W/,'_');
       this.title = Exceptionator.Config.friendlyNames[this.bucketName];
     } else {
       this.query = options.query;
