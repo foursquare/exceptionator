@@ -13,11 +13,12 @@ import com.twitter.finagle.Service
 import com.twitter.ostrich.stats.Stats
 import com.foursquare.exceptionator.util.{Config, Logger}
 import com.twitter.util.{Future, FuturePool, Throw}
+import java.net.URLDecoder
 import java.util.concurrent.Executors
 import org.joda.time.DateTime
 
 object ApiHttpService {
-   val Notices = """/api/notices(?:/(\w+)(?:/([^/?&=]+))?)?""".r
+   val Notices = """/api/notices(?:/([^/]+)(?:/([^/?&=]+))?)?""".r
 }
 class ApiHttpService(
   noticeActions: NoticeActions,
@@ -36,9 +37,9 @@ class ApiHttpService(
           case "/api/config" =>
             config
           case ApiHttpService.Notices(name, key) =>
-            notices(Option(name), Option(key), request)
+            notices(Option(name).map(decodeURIComponent(_)), Option(key).map(decodeURIComponent), request)
           case "/api/search" =>
-            search(request.getParam("q").toLowerCase, request)
+            search(decodeURIComponent(request.getParam("q")).toLowerCase, request)
           case _ => 
             InternalResponse(Future.value(""), HttpResponseStatus.NOT_FOUND)
         }
@@ -51,6 +52,10 @@ class ApiHttpService(
       case _ =>
         ServiceUtil.errorResponse(HttpResponseStatus.NOT_FOUND)
     }
+  }
+
+  def decodeURIComponent(component: String) = {
+    URLDecoder.decode(component.replace("+", "%2B"), "UTF-8")
   }
 
   def limitParam(request: Request) = request.getIntParam("limit", 20)

@@ -25,7 +25,13 @@ Exceptionator.Notice = Backbone.Model.extend({
       this.set({d_fmt: Exceptionator.Notice.formatDate(this.get('d'))})
     }
     _.each(this.get('bkts'), function(bucket, name) {
-      bucket['friendlyName'] = Exceptionator.Config.friendlyNames[name];
+      if (name in Exceptionator.Config.friendlyNames) {
+        bucket['friendlyName'] = Exceptionator.Config.friendlyNames[name];
+      } else {
+        bucket['friendlyName'] = name;
+      }
+      bucket['nm_uri'] = encodeURIComponent(name);
+      bucket['k_uri'] = encodeURIComponent(bucket.k);
     });
     _.each(this.get('bt'), function(backtrace, index) {
       this.get('bt')[index] = backtrace.split('\n');
@@ -115,15 +121,24 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
       this.listType = Exceptionator.ListTypes.BUCKET_KEY;
       this.bucketKey = options.bucketKey;
       this.bucketName = options.bucketName;
-      this.urlPart = '/api/notices/' + this.bucketName + '/' + this.bucketKey + '?';
+      this.urlPart = '/api/notices/' + encodeURIComponent(this.bucketName) + '/' + encodeURIComponent(this.bucketKey) + '?';
       this.id = this.bucketName.replace(/\W/g,'_') + '_' + this.bucketKey.replace(/\W/g,'_');
-      this.title = Exceptionator.Config.friendlyNames[this.bucketName] + ': ' + this.bucketKey;
+      if (this.bucketName in Exceptionator.Config.friendlyNames) {
+        this.title = Exceptionator.Config.friendlyNames[this.bucketName];
+      } else {
+        this.title = this.bucketName;
+      }
+      this.title += ': ' + this.bucketKey;
     } else if (options.bucketName) {
       this.listType = Exceptionator.ListTypes.BUCKET_GROUP;
       this.bucketName = options.bucketName;
-      this.urlPart = '/api/notices/' + this.bucketName + '?';
+      this.urlPart = '/api/notices/' + encodeURIComponent(this.bucketName) + '?';
       this.id = this.bucketName.replace(/\W/g,'_');
-      this.title = Exceptionator.Config.friendlyNames[this.bucketName];
+      if (this.bucketName in Exceptionator.Config.friendlyNames) {
+        this.title = Exceptionator.Config.friendlyNames[this.bucketName];
+      } else {
+        this.title = this.bucketName;
+      }
     } else {
       this.query = options.query;
       this.listType = Exceptionator.ListTypes.SEARCH;
@@ -367,11 +382,11 @@ Exceptionator.Routing = Backbone.Router.extend({
   },
 
   bucket: function(bucketName, bucketKey) {
-    this.route_([{list: {bucketName: bucketName, bucketKey: bucketKey}}]);
+    this.route_([{list: {bucketName: decodeURIComponent(bucketName), bucketKey: decodeURIComponent(bucketKey)}}]);
   },
 
   bucketGroup: function(bucketName) {
-    this.route_([{list: {bucketName: bucketName}}]);
+    this.route_([{list: {bucketName: decodeURIComponent(bucketName)}}]);
   }
 
 });

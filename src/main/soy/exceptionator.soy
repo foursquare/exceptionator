@@ -13,11 +13,10 @@
 
 /**
  * a bucket link
- * @param nm bucket name
  * @param b bucket
  */
 {template .bucketLink}
-  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/notices/{$nm}/{$b.k}', {literal}{trigger: true}{/literal});">
+  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/notices/{$b.nm_uri}/{$b.k_uri}', {literal}{trigger: true}{/literal});">
     {$b.k |truncate:10} {if $b.n}({$b.n}){/if}
   </a>
 {/template}
@@ -67,7 +66,6 @@
     <div class="item">
       {$n.bkts[$k].friendlyName} - {sp}
       {call .bucketLink}
-        {param nm: $k /}
         {param b: $n.bkts[$k] /}
       {/call}
     </div>
@@ -115,7 +113,6 @@
     <div class="exc_n" onclick="event.cancelBubble = true;">
       {$n.bkts[$k].friendlyName} - {sp}
       {call .bucketLink}
-        {param nm: $k /}
         {param b: $n.bkts[$k] /}
       {/call}
     </div>
