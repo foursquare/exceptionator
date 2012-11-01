@@ -1,6 +1,6 @@
 name := "exceptionator"
 
-version := "2.0-beta8"
+version := "2.0-beta9"
 
 scalaVersion := "2.9.1"
 
@@ -14,9 +14,9 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "com.codahale"            %% "jerkson"              % "0.4.2"      withSources(),
-  "com.foursquare"          %% "rogue-field"          % "2.0.0-beta16" intransitive(),
-  "com.foursquare"          %% "rogue-core"           % "2.0.0-beta16" intransitive(),
-  "com.foursquare"          %% "rogue-lift"           % "2.0.0-beta16" intransitive(),
+  "com.foursquare"          %% "rogue-field"          % "2.0.0-beta18" intransitive(),
+  "com.foursquare"          %% "rogue-core"           % "2.0.0-beta18" intransitive(),
+  "com.foursquare"          %% "rogue-lift"           % "2.0.0-beta18" intransitive(),
   "net.liftweb"             %% "lift-mongodb-record"  % "2.4-M5",
   "com.googlecode.concurrentlinkedhashmap" % "concurrentlinkedhashmap-lru" % "1.2",
   "com.novocode"            %  "junit-interface"      % "0.6"       % "test",
