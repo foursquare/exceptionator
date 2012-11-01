@@ -27,6 +27,7 @@ if __name__ == '__main__':
   parser.add_option('--skip', dest='skip', help='lines to skip')
   parser.add_option('--multi', dest='multi', help='use multi-notice, using MULTI notices per POST')
   parser.add_option('--now', action='store_true', dest='now', help='ignore notice date')
+  parser.add_option('--epoch', dest='epoch', help='use specific date')
   (options, args) = parser.parse_args(args=sys.argv)
   if len(args) != 2:
     print parser.print_usage()
@@ -46,6 +47,12 @@ if __name__ == '__main__':
   else:
     every = 1
 
+  if options.epoch:
+    epoch = int(options.epoch)
+    print "using epoch=%d (%s)" % (epoch, time.ctime(epoch))
+  else:
+    epoch = False
+
   buf = []
   times = []
   try:
@@ -59,17 +66,23 @@ if __name__ == '__main__':
       if sleep:
         time.sleep(sleep)
 
-      if options.now:
+      if options.now or epoch != False:
         try:
           o = json.loads(l)
-          del o['d']
+          if options.now:
+            try:
+              del o['d']
+            except KeyError:
+              pass
+          else:
+            o['d'] = epoch * 1000L
           buf.append(json.dumps(o))
-        except KeyError:
-          buf.append(l)
         except ValueError:
           print l
           buf.append(l)
-      buf.append(l)
+
+      else:    
+        buf.append(l)
 
       if (i % every) == 0:
         if options.multi:
@@ -80,7 +93,7 @@ if __name__ == '__main__':
         buf = []
 
   except KeyboardInterrupt:
-    print
+    print ''
     avg = sum(times)/len(times)
     print 'avg: %06f' % avg
     print 'stdev: %06f' % math.sqrt(sum([(x - avg) * (x - avg) for x in times]) / len(times))

@@ -83,19 +83,20 @@ class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
 
   def startTime(now: DateTime) = {
     val dt = now.withMinuteOfHour(0).withSecondOfMinute(0).withMillisOfSecond(0)
+    // Set the month _before_ the day, e.g now is in November (30 days), but you are adjusting to 10/31.
     histogramType match {
       case HistogramType.Hour =>
         dt.withHourOfDay(Hash.fieldNameDecode(id(2).toString))
-          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
           .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
       case HistogramType.Day =>
         dt.withHourOfDay(0)
-          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
           .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+          .withDayOfMonth(Hash.fieldNameDecode(id(1).toString))
       case HistogramType.Month =>
         dt.withHourOfDay(0)
-          .withDayOfMonth(1)
           .withMonthOfYear(Hash.fieldNameDecode(id(0).toString))
+          .withDayOfMonth(1)
     }
   }
 
