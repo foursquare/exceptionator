@@ -13,7 +13,7 @@ trait MailSender {
 
 class ConcreteMailSender extends MailSender with Logger {
   val sender: MailSender = if (!Config.opt(_.getBoolean("email.test")).exists(_ == true)) {
-    new JavaxMailSender
+    new MailAndLogSender
   } else {
     logger.info("Using a fake mailer, email.test is true")
     new LogMailSender
@@ -52,13 +52,24 @@ class JavaxMailSender extends MailSender {
     )
   })
 
-  def send(to: List[String], cc: List[String], subject: String, msg: String) {
-    val message = new MimeMessage(session)
-    message.setFrom(new InternetAddress(Config.opt(_.getString("email.from")).getOrElse("")))
-    message.addRecipients(Message.RecipientType.TO, to.mkString(","))
-    message.addRecipients(Message.RecipientType.CC, cc.mkString(","))
-    message.setSubject(subject)
-    message.setText(msg)
-    Transport.send(message)
+  def send(to: List[String], cc: List[String], subject: String, message: String) {
+    val mail = new MimeMessage(session)
+    mail.setFrom(new InternetAddress(Config.opt(_.getString("email.from")).getOrElse("")))
+    mail.addRecipients(Message.RecipientType.TO, to.mkString(","))
+    mail.addRecipients(Message.RecipientType.CC, cc.mkString(","))
+    mail.setSubject(subject)
+    mail.setText(message)
+    Transport.send(mail)
+  }
+}
+
+
+class MailAndLogSender extends MailSender {
+  val logMailSender = new LogMailSender
+  val mailSender = new JavaxMailSender
+
+  def send(to: List[String], cc: List[String], subject: String, message: String) {
+    logMailSender.send(to, cc, subject, message)
+    mailSender.send(to, cc, subject, message)
   }
 }
