@@ -81,7 +81,7 @@ if __name__ == '__main__':
           print l
           buf.append(l)
 
-      else:    
+      else:
         buf.append(l)
 
       if (i % every) == 0:
