@@ -115,7 +115,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     val noticesToRemove = existing.toList.flatMap(e => {
       val len = e.notices.value.length
       if (len >= maxRecent + maxRecent / 2) {
-        logger.info("trimming %d from %s".format(len - maxRecent, bucketKey))
+        logger.debug("trimming %d from %s".format(len - maxRecent, bucketKey))
         val toRemove = e.notices.value.take(len - maxRecent)
         Stats.time("bucketActions.save.removeExpiredNotices") {
           BucketRecord.where(_._id eqs bucketKey).modify(_.notices pullAll toRemove).updateOne()
@@ -161,7 +161,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
       BucketRecordHistogram.where(_._id matches oldHoursPattern))
 
     deleteQueries.foreach(q => {
-      logger.info("deleting: %s".format(q))
+      logger.debug("deleting: %s".format(q))
       if (doIt) {
         Stats.time("bucketActions.save.deleteOldHistograms.delete") {
           q.bulkDelete_!!!()

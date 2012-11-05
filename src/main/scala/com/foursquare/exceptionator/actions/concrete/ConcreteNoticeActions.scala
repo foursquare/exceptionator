@@ -57,7 +57,7 @@ class ConcreteNoticeActions extends NoticeActions with IndexActions with Logger 
     }
 
     if (result.exists(_ == Nil)) {
-      logger.info("deleting " + id.toString)
+      logger.debug("deleting " + id.toString)
       Stats.time("incomingActions.removeBucket.deleteRecord") {
         NoticeRecord.delete("_id", id)
       }
