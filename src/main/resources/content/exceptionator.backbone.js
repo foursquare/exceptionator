@@ -14,6 +14,7 @@ Exceptionator.ListTypes = {
 
 Exceptionator.GraphSpan = Exceptionator.GraphSpans.LAST_HOUR;
 Exceptionator.Limit = 10;
+Exceptionator.MouseDown = 0;
 
 
 /*

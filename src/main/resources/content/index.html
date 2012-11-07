@@ -78,6 +78,13 @@
       Exceptionator.Router.navigate('/', {trigger:true});
     });
 
+    $('body').mousedown(function(event) {
+      Exceptionator.MouseDown = 1;
+    });
+    $('body').mouseup(function(event) {
+      Exceptionator.MouseDown = 0;
+    });
+
     $('body').keyup(function(event) {
       if(event.keyCode == 80) {
         if (Exceptionator.Paused) {
@@ -107,7 +114,13 @@
 
       looper = function() {
         Exceptionator.LoopTimer = setTimeout(function(){
-          if (!Exceptionator.Paused) {
+          if (!Exceptionator.Paused &&
+              !Exceptionator.MouseDown &&
+              // If we can detect selections, and the user has
+              // highlighted something, don't refresh, because it will kill
+              // their highlight
+              (!window.getSelection || window.getSelection().type != "Range")) {
+
             Exceptionator.App.fetch();
           }
           looper();
