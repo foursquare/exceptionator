@@ -144,21 +144,21 @@
 {template .noticeList}
   <div id="outer_{$id}">
     <div class="row">
-      <div class="span16">
-        <h3 id="title_{$id}">{$title}</h3>
+      <div class="span12">
+        <h4 id="title_{$id}">{$title}</h4>
       </div>
     </div>
     {if $showGraph}
     <div class="row">
-      <div class="span16">
-        <div id="plot_{$id}" style="width:940px;height:150px">
+      <div class="span12">
+        <div id="plot_{$id}" style="width:940px;height:170px">
         </div>
       </div>
     </div>
     {/if}
     {if $showList}
     <div class="row">
-      <div class="span16">
+      <div class="span12">
         <div id="{$id}">
         </div>
       </div>

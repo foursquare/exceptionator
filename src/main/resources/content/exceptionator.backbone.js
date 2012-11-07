@@ -197,7 +197,7 @@ Exceptionator.NoticeListView = Backbone.View.extend({
   tagName: "div",
 
   events: {
-    "click": "toggleBody"
+    "click .exc_header": "toggleBody"
   },
 
   toggleBody: function(e) {
