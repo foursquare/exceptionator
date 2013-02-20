@@ -50,15 +50,15 @@ class ConcreteNoticeActions extends NoticeActions with IndexActions with Logger 
   }
 
   def removeBucket(id: ObjectId, bucketId: BucketId) {
-    val result = Stats.time("incomingActions.removeBucket") {
+    val result = Stats.time("noticeActions.removeBucket") {
       NoticeRecord.where(_._id eqs id)
       .select(_.buckets)
       .findAndModify(_.buckets pull bucketId.toString).updateOne(true)
     }
 
-    if (result.exists(_ == Nil)) {
+    if (result.exists(_.isEmpty)) {
       logger.debug("deleting " + id.toString)
-      Stats.time("incomingActions.removeBucket.deleteRecord") {
+      Stats.time("noticeActions.removeBucket.deleteRecord") {
         NoticeRecord.delete("_id", id)
       }
     }

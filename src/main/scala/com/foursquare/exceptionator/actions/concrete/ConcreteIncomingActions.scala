@@ -54,6 +54,18 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
     })
   }
 
+  def doMaintenance(now: Long) {
+    bucketActions.deleteOldHistograms(now, true)
+
+    // Find really stale buckets that haven't been updated for 60 days. And delete them
+    Stats.time("incomingActions.deleteOldBuckets") {
+      val toRemove = bucketActions.deleteOldBuckets(now, true)
+      toRemove.foreach(tr => tr.noticesToRemove.foreach(n =>
+        noticeActions.removeBucket(n, tr.bucket)
+      ))
+    }
+  }
+
   def save(incoming: FilteredIncoming): ProcessedIncoming = {
 
     val tags = incoming.tags
@@ -88,20 +100,21 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
 
     val remove = results.flatMap(r => r.noticesToRemove.map(_ -> r.bucket)).toList
 
+
+    // Fix up old notices that have been kicked out
+    Stats.time("incomingActions.remove") {
+      remove.foreach(bucketRemoval => noticeActions.removeBucket(bucketRemoval._1, bucketRemoval._2))
+    }
+
     // A bit racy, but only approximation is needed.  Want to trim histograms
     // about every hour
     val now = incomingId.getTime
     if (now > currentTime) {
       currentTime = now
-      if (currentTime - lastHistogramTrim > (60/*mins*/ * 60/*secs*/ * 1000)) {
+      if (currentTime - lastHistogramTrim > (60L/*mins*/ * 60/*secs*/ * 1000)) {
         lastHistogramTrim = now
-        bucketActions.deleteOldHistograms(now, true)
+        doMaintenance(now)
       }
-    }
-
-    // Fix up old notices that have been kicked out
-    Stats.time("incomingActions.remove") {
-      remove.foreach(bucketRemoval => noticeActions.removeBucket(bucketRemoval._1, bucketRemoval._2))
     }
 
     ProcessedIncoming(Some(incomingId), incoming.incoming, tags, kw, finalBuckets)
