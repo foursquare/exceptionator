@@ -13,8 +13,7 @@ import com.twitter.finagle.http.{RichHttp, Http, Response, Request}
 import com.twitter.finagle.http.filter.ExceptionFilter
 import com.twitter.finagle.Service
 import com.twitter.finagle.stats.OstrichStatsReceiver
-import com.twitter.ostrich.admin._
-import com.twitter.ostrich.admin.config._
+import com.twitter.ostrich.admin.{AdminServiceFactory, RuntimeEnvironment, StatsFactory, TimeSeriesCollectorFactory}
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, Throw}
 import java.io.InputStream
@@ -145,15 +144,13 @@ object ExceptionatorServer extends Logger {
     bootMongo(List(noticeActions, bucketActions))
 
     // Start ostrich
-    val adminConfig = new AdminServiceConfig {
-      httpPort = (Config.opt(_.getInt("stats.port")).getOrElse(defaultPort + 1)): Int
-      statsNodes = new StatsConfig {
-        reporters = new TimeSeriesCollectorConfig
-      }
-    }
     val runtime = RuntimeEnvironment(this, Array[String]())
-    val admin = adminConfig()(runtime)
-    
+
+    AdminServiceFactory(
+      httpPort = (Config.opt(_.getInt("stats.port")).getOrElse(defaultPort + 1)))
+      .addStatsFactory(StatsFactory(reporters = List(TimeSeriesCollectorFactory())))
+      .apply(runtime)
+
     val httpPort = Config.opt(_.getInt("http.port")).getOrElse(defaultPort)
     logger.info("Starting ExceptionatorHttpService on port %d".format(httpPort))
 
