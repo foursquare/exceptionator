@@ -15,5 +15,5 @@ trait BucketActions {
   def recentKeys(name: String, limit: Option[Int]): List[String]
   def save(incomingId: ObjectId, incoming: Incoming, bucket: BucketId, maxRecent: Int): SaveResult
   def deleteOldHistograms(time: Long, doIt: Boolean = true): Unit
-  def deleteOldBuckets(lastUpdatedTime: Long, doIt: Boolean = true): List[SaveResult]
+  def deleteOldBuckets(lastUpdatedTime: Long, batchSize: Int = 500, doIt: Boolean = true): List[SaveResult]
 }

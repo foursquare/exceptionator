@@ -59,7 +59,7 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
 
     // Find really stale buckets that haven't been updated for 60 days. And delete them
     Stats.time("incomingActions.deleteOldBuckets") {
-      val toRemove = bucketActions.deleteOldBuckets(now, true)
+      val toRemove = bucketActions.deleteOldBuckets(now)
       toRemove.foreach(tr => tr.noticesToRemove.foreach(n =>
         noticeActions.removeBucket(n, tr.bucket)
       ))

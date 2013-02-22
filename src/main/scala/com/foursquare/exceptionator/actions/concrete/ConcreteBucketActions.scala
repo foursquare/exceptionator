@@ -170,11 +170,11 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     })
   }
 
-  def deleteOldBuckets(time: Long, doIt: Boolean = true): List[SaveResult] = {
+  def deleteOldBuckets(time: Long, batchSize: Int = 500, doIt: Boolean = true): List[SaveResult] = {
     val dateTime = new DateTime(time)
     val staleDateTime = dateTime.minusMonths(2).minusDays(1)
     val staleTime = staleDateTime.getMillis
-    val oldBuckets = BucketRecord.where(_.lastSeen lte staleTime).limit(500).fetch()
+    val oldBuckets = BucketRecord.where(_.lastSeen lte staleTime).limit(batchSize).fetch()
 
     if (!oldBuckets.isEmpty) {
       logger.info("Deleting %d old buckets since %s".format(oldBuckets.length, staleDateTime.toString()))
