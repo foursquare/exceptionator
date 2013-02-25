@@ -133,7 +133,7 @@ object ExceptionatorServer extends Logger {
     Config.defaultInit()
 
     // Create services
-    val backgroundActions = new ConcreteBackgroundActions(new ConcreteMailSender, new ConcreteBlamer)
+    val backgroundActions = new ConcreteBackgroundActions
     val bucketActions = new ConcreteBucketActions
     val noticeActions = new ConcreteNoticeActions
     val incomingActions = new FilteredConcreteIncomingActions(

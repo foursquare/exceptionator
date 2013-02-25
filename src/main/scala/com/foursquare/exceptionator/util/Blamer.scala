@@ -3,21 +3,21 @@
 package com.foursquare.exceptionator.util
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap
+import com.twitter.util.Future
 import java.io.File
-import scala.sys.process._
-import scala.util.matching.Regex
 import org.joda.time.DateTime
+import scala.util.matching.Regex
 
 object Blame {
   def apply(filePath: String, lineNum: Int): Blame = Blame("", "", "", filePath, "", lineNum)
 }
 
 case class Blame(author: String, mail: String, date: String, filePath: String, lineString: String, lineNum: Int) {
-  def valid_? = author.length > 0 && mail.length > 0 && mail != "not.committed.yet"
+  def isValid = author.length > 0 && mail.length > 0 && mail != "not.committed.yet"
 }
 
 trait Blamer {
-  def blame(tag: String, fileName: String, line: Int): List[Blame]
+  def blame(tag: String, fileName: String, line: Int, hints: Set[String]): Future[Option[Blame]]
 }
 
 
@@ -30,13 +30,14 @@ class ConcreteBlamer extends Blamer with Logger {
       new NilBlamer
     })
 
-  def blame(tag: String, fileName: String, line: Int): List[Blame] = blamer.blame(tag, fileName, line)
+  def blame(tag: String, fileName: String, line: Int, hints: Set[String]): Future[Option[Blame]] = blamer.blame(tag, fileName, line, hints)
 
 }
 
 
 class NilBlamer extends Blamer {
-  def blame(tag: String, fileName: String, line: Int): List[Blame] = Nil
+  def blame(tag: String, fileName: String, line: Int, hints: Set[String]): Future[Option[Blame]] =
+    Future.value(None)
 }
 
 class GitBlamer(val root: File) extends Blamer with Logger {
@@ -44,62 +45,46 @@ class GitBlamer(val root: File) extends Blamer with Logger {
   val maxTags = 4
   val rootSub = if(root.toString.endsWith("/")) root.toString.length else root.toString.length + 1
   val recentTags =
-    new ConcurrentLinkedHashMap.Builder[String, List[(String, String)]].maximumWeightedCapacity(maxTags).build()
+    new ConcurrentLinkedHashMap.Builder[String, Map[String, List[String]]].maximumWeightedCapacity(maxTags).build()
 
-  def checkout(tag: String) {
-    if (tag == "") {
-      return
-    }
-    try {
-      val gdescribe = Process(List("git", "describe", "--tags"), root)
-      var currTag = ""
-      val ret = gdescribe ! ProcessLogger((s) => currTag = s)
-      if (currTag != tag) {
-        val gco = Process(List("git", "checkout", tag), root)
-        val ret = gco ! ProcessLogger((s) => Unit, (s) => logger.info(s))
-        if (ret != 0) {
-          val gfetch = Process(List("git", "fetch"), root)
-          val ret0 = gfetch ! ProcessLogger((s) => Unit, (s) => logger.info(s))
-          if (ret0 != 0) {
-            throw new RuntimeException("couldn't fetch!")
-          }
-          val gfetchTags = Process(List("git", "fetch", "--tags"), root)
-          val ret1 = gfetchTags ! ProcessLogger((s) => Unit, (s) => logger.info(s))
-          if (ret1 != 0) {
-            throw new RuntimeException("couldn't fetch tags!")
-          }
-          val ret2 = gco ! ProcessLogger((s) => Unit, (s) => logger.info(s))
-          if (ret2 != 0) {
-            throw new RuntimeException("couldn't fetch tag " + tag)
-          }
-        }
+  def retry(
+    process: () => Future[ProcessResult],
+    fixAttempt: () => Future[ProcessResult]): Future[ProcessResult] = {
+
+    process().rescue { case e => {
+      fixAttempt().flatMap { (r: ProcessResult) =>
+         process()
       }
-    } catch {
-      case e =>
-        logger.error(e, "Couldn't check out revision " + tag)
-        throw e
-    }
+    }}
   }
 
-  def findFile(tag: String, name: String): List[String] = {
-    def buildListRec(f: File):List[(String, String)] = f.isDirectory match {
-      case true => f.listFiles.toList.map(f => buildListRec(f)).flatten
-      case false => List((f.getName -> f.toString.substring(rootSub)))
-    }
-    val l = recentTags.get(tag)
-    if (l != null) {
-      l.filter(_._1 == name).map(_._2)
-    }
-    else {
-      checkout(tag)
-      logger.info("building git tree...")
-      val l = buildListRec(root)
-      recentTags.put(tag, l)
-      l.filter(_._1 == name).map(_._2)
-    }
+  def fetch(tag: String): Future[ProcessResult] = {
+    Process(List("git", "fetch", "+refs/heads/*:refs/remotes/origin/*", "refs/tags/:refs/tags/"), root)
   }
 
-  def blame(tag: String, fileName: String, line: Int): List[Blame] = {
+  def findFile(tag: String, name: String, hints: Set[String]): Future[Option[String]] = {
+    Option(recentTags.get(tag))
+      .map(fileMap => Future.value(fileMap.get(name)
+      .getOrElse(Nil))).getOrElse({
+        val result = retry(() => Process(List("git", "ls-files", "--with-tree=" + tag), root), () => fetch(tag))
+        val rescued: Future[ProcessResult] = result.rescue { case e => {
+          Future.value(ProcessResult(0, Nil, Nil))
+        }}
+
+        rescued.map(r => {
+          val fileMap: Map[String, List[String]] = r.out.map(f => new File(f).getName -> f)
+            .groupBy(_._1)
+            .map { case (key, pairs) => key -> pairs.map(_._2).toList }
+          recentTags.put(tag, fileMap)
+          fileMap.get(name).getOrElse(Nil)
+        })
+    }).map(_ match {
+      case Nil => None
+      case candidates =>
+        Some(candidates.maxBy(_.split("/").toSet.intersect(hints).size))
+    })
+  }
+  def blame(tag: String, fileName: String, line: Int, hints: Set[String]): Future[Option[Blame]] = {
     val Author = new Regex("""^author (.*)$""")
     val Mail = new Regex("""^author-mail <(.*)>$""")
     val Date = new Regex("""^committer-time (.*)$""")
@@ -112,13 +97,13 @@ class GitBlamer(val root: File) extends Blamer with Logger {
       case LineString(l) => b.copy(lineString=l)
       case _ => b
     }
-    checkout(tag)
-    findFile(tag, fileName).map( f => {
-      var blameObj = Blame(f, line)
-      val gblame = Process(List("git", "blame", "-w", "--porcelain", "-L%d,%d".format(line, line), f), root)
-      val plogger = ProcessLogger ((s) => blameObj = updateBlame(s, blameObj), (s) => logger.info(s))
-      val ret = gblame ! plogger
-      blameObj
-    })
+
+    findFile(tag, fileName, hints).flatMap { fileOpt => fileOpt.map(f => {
+      val gblame = retry(
+        () => Process(List("git", "blame", tag, "-w", "--porcelain", "-L%d,%d".format(line, line), f), root),
+        () => fetch(tag))
+      gblame.map(pr => Some(pr.out.foldLeft(Blame(f, line)){ (b, l) => updateBlame(l, b) }))
+      }).getOrElse(Future.value[Option[Blame]](None))
+    }
   }
 }

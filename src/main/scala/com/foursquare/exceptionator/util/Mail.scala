@@ -5,10 +5,12 @@ package com.foursquare.exceptionator.util
 import javax.mail._
 import javax.mail.internet._
 import java.util.Properties
+import com.twitter.util.{Future, FuturePool}
+import java.util.concurrent.Executors
 
 
 trait MailSender {
-  def send(to: List[String], cc: List[String], subject: String, message: String): Unit
+  def send(to: List[String], cc: List[String], subject: String, message: String): Future[Unit]
 }
 
 class ConcreteMailSender extends MailSender with Logger {
@@ -19,24 +21,27 @@ class ConcreteMailSender extends MailSender with Logger {
     new LogMailSender
   }
 
-  def send(to: List[String], cc: List[String], subject: String, message: String) {
+  def send(to: List[String], cc: List[String], subject: String, message: String): Future[Unit] = {
     sender.send(to, cc, subject, message)
   }
 }
 
 class LogMailSender extends MailSender with Logger {
-  def send(to: List[String], cc: List[String], subject: String, message: String) {
+  def send(to: List[String], cc: List[String], subject: String, message: String): Future[Unit] = {
     logger.info("To:\n%s\nCC:\n%s\nSubject:\n%s\n\n%s".format(
       to.mkString("\n"),
       cc.mkString("\n"),
       subject,
       message
     ))
+    Future.Unit
   }
 }
 
 class JavaxMailSender extends MailSender {
   val props = new Properties()
+  val mailFuturePool = FuturePool(Executors.newFixedThreadPool(5))
+
   props.setProperty("mail.transport.protocol", "smtp")
   props.setProperty("mail.host", Config.root.getString("email.host"))
   props.put("mail.smtp.auth", "true")
@@ -52,14 +57,14 @@ class JavaxMailSender extends MailSender {
     )
   })
 
-  def send(to: List[String], cc: List[String], subject: String, message: String) {
+  def send(to: List[String], cc: List[String], subject: String, message: String): Future[Unit] = {
     val mail = new MimeMessage(session)
     mail.setFrom(new InternetAddress(Config.opt(_.getString("email.from")).getOrElse("")))
     mail.addRecipients(Message.RecipientType.TO, to.mkString(","))
     mail.addRecipients(Message.RecipientType.CC, cc.mkString(","))
     mail.setSubject(subject)
     mail.setText(message)
-    Transport.send(mail)
+    mailFuturePool(Transport.send(mail))
   }
 }
 
@@ -68,7 +73,7 @@ class MailAndLogSender extends MailSender {
   val logMailSender = new LogMailSender
   val mailSender = new JavaxMailSender
 
-  def send(to: List[String], cc: List[String], subject: String, message: String) {
+  def send(to: List[String], cc: List[String], subject: String, message: String): Future[Unit] = {
     logMailSender.send(to, cc, subject, message)
     mailSender.send(to, cc, subject, message)
   }

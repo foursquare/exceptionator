@@ -31,6 +31,10 @@
       "com.foursquare.exceptionator.filter.concrete.SignificantKeywordsFilter",
       "com.foursquare.exceptionator.filter.concrete.TagsKeywordFilter",
       "com.foursquare.exceptionator.filter.concrete.BucketsKeywordFilter"
+    ],
+
+    "postSaveActions": [
+      "com.foursquare.exceptionator.actions.concrete.EmailFreshExceptionBackgroundAction"
     ]
 
   },

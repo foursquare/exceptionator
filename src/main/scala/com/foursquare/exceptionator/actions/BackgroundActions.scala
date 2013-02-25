@@ -3,8 +3,13 @@
 package com.foursquare.exceptionator.actions
 
 import com.foursquare.exceptionator.filter.ProcessedIncoming
+import com.twitter.util.Future
+
+trait BackgroundAction {
+  def postSave(processedIncoming: ProcessedIncoming): Future[Unit]
+}
 
 trait BackgroundActions {
-  def postSave(processedIncoming: ProcessedIncoming): Unit
+  def postSave(processedIncoming: ProcessedIncoming): List[Future[Unit]]
 }
 
