@@ -109,6 +109,22 @@ Exceptionator.NoticeView = Backbone.View.extend({
   }
 });
 
+Exceptionator.StaticNoticeView = Backbone.View.extend({
+  tagName: "div",
+  className: "exc exc_hidden",
+  initialize: function(options) {
+    this.$el.empty();
+    this.$el.append(Exceptionator.Soy.emptyNotice({text: options.text}));
+  },
+
+  render: function() {
+    return this;
+  }
+});
+
+Exceptionator.NoResultsNoticeView = 
+Exceptionator.FetchingNoticeView = 
+
 
 /*
  * NoticeList
@@ -238,9 +254,26 @@ Exceptionator.NoticeListView = Backbone.View.extend({
     this.noticeViews = {};
   },
 
+  shouldShowGraph: function() {
+    return this.showGraph;
+  },
+
+  shouldShowList: function() {
+    if (this.collection.isEmpty()) {
+      return true;
+    } else {
+      return this.showList;
+    }
+  },
+
   reset: function() {
     this.getListEl().empty();
-    this.addNotices(this.collection.models);
+    if (this.collection.isEmpty()) {
+      var view = new Exceptionator.StaticNoticeView({text: "No results"})
+      this.getListEl().append(view.el);
+    } else {
+      this.addNotices(this.collection.models);
+    }
     this.trigger('Exceptionator:NoticeListView:reset', this);
   },
 
@@ -271,12 +304,13 @@ Exceptionator.NoticeListView = Backbone.View.extend({
   },
 
   renderGraph: function() {
-    if (this.showGraph) {
+    if (this.shouldShowGraph()) {
       var options = {
         lines: { show: true },
         legend: { position: "nw" },
         xaxis: { mode: "time", timezone: "browser" }
       };
+
       $.plot(
           this.getGraphEl(),
           _.first(this.collection.histograms(), Exceptionator.NoticeListView.MAX_GRAPH_LINES),
@@ -285,12 +319,28 @@ Exceptionator.NoticeListView = Backbone.View.extend({
     return this;
   },
 
+  renderFetch: function() {
+    if (this.collection.isEmpty()) {
+      shouldShowList = true;
+      shouldShowGraph = false;
+      this.$el.empty();
+      this.$el.append(Exceptionator.Soy.noticeList({
+        id: this.id,
+        showList: this.shouldShowList(),
+        showGraph: this.shouldShowGraph(),
+        title: this.collection.title}));
+      var view = new Exceptionator.StaticNoticeView({text: "Fetching results..."})
+      this.getListEl().append(view.el);
+    }
+    return this;
+  },
+
   render: function() {
     this.$el.empty();
     this.$el.append(Exceptionator.Soy.noticeList({
       id: this.id,
-      showList: this.showList,
-      showGraph: this.showGraph,
+      showList: this.shouldShowList(),
+      showGraph: this.shouldShowGraph(),
       title: this.collection.title}));
     this.reset();
     return this;
@@ -344,7 +394,7 @@ Exceptionator.AppView = Backbone.View.extend({
 
   fetch: function() {
     _.each(this.noticeListViews, function(view) {
-      view.collection.fetch();
+      view.renderFetch().collection.fetch();
     });
   }
 });

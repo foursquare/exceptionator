@@ -120,6 +120,13 @@ Exceptionator.Soy.notice = function(opt_data, opt_sb) {
 };
 
 
+Exceptionator.Soy.emptyNotice = function(opt_data, opt_sb) {
+  var output = opt_sb || new soy.StringBuilder();
+  output.append('<div class="exc_header" style="text-align:center;border-bottom-width:1px;border-bottom-style:solid">', soy.$$escapeHtml(opt_data.text), '</div>');
+  return opt_sb ? '' : output.toString();
+};
+
+
 Exceptionator.Soy.noticeList = function(opt_data, opt_sb) {
   var output = opt_sb || new soy.StringBuilder();
   output.append('<div id="outer_', soy.$$escapeHtml(opt_data.id), '"><div class="row"><div class="span12"><h4 id="title_', soy.$$escapeHtml(opt_data.id), '">', soy.$$escapeHtml(opt_data.title), '</h4></div></div>', (opt_data.showGraph) ? '<div class="row"><div class="span12"><div id="plot_' + soy.$$escapeHtml(opt_data.id) + '" style="width:940px;height:170px"></div></div></div>' : '', (opt_data.showList) ? '<div class="row"><div class="span12"><div id="' + soy.$$escapeHtml(opt_data.id) + '"></div></div></div>' : '', '</div>');
