@@ -23,19 +23,21 @@ object ApiHttpService {
 class ApiHttpService(
   noticeActions: NoticeActions,
   bucketActions: BucketActions,
-  bucketFriendlyNames: Map[String, String]) extends Service[Request, Response] with Logger {
+  bucketFriendlyNames: Map[String, String]) extends Service[ExceptionatorRequest, Response] with Logger {
 
   case class InternalResponse(content: Future[String], status: HttpResponseStatus = HttpResponseStatus.OK)
 
   val apiFuturePool = FuturePool(Executors.newFixedThreadPool(10))
 
-  def apply(request: Request) = {
+  def apply(request: ExceptionatorRequest) = {
 
     request.method match {
       case HttpMethod.GET =>
         val res: InternalResponse = request.path match {
           case "/api/config" =>
             config
+          case "/api/me" =>
+            me(request)
           case ApiHttpService.Notices(name, key) =>
             notices(Option(name).map(decodeURIComponent(_)), Option(key).map(decodeURIComponent), request)
           case "/api/search" =>
@@ -97,6 +99,11 @@ class ApiHttpService(
       outgoing
     }))
   }
+
+  def me(request: ExceptionatorRequest) = {
+    InternalResponse(Future.value(generate(Map("id" -> request.userId))))
+  }
+
 
   def config = {
     val values = Map(

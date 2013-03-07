@@ -18,11 +18,11 @@ import java.util.concurrent.Executors
 import scalaj.collection.Imports._
 
 class IncomingHttpService(incomingActions: IncomingActions, backgroundActions: BackgroundActions)
-    extends Service[Request, Response] with Logger {
+    extends Service[ExceptionatorRequest, Response] with Logger {
 
   val incomingLog = Config.opt(_.getString("log.incoming")).map(fn => new BufferedWriter(new FileWriter(fn, true)))
 
-  def apply(request: Request) = {
+  def apply(request: ExceptionatorRequest) = {
     request.method match {
       case HttpMethod.POST =>
         request.path match {

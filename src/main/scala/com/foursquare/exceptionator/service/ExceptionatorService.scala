@@ -34,7 +34,8 @@ object ServiceUtil {
 }
 
 
-class StaticFileService(prefix: String) extends Service[Request, Response] with Logger {
+
+class StaticFileService(prefix: String) extends Service[ExceptionatorRequest, Response] with Logger {
 
   val staticFileFuturePool = FuturePool(Executors.newFixedThreadPool(8))
 
@@ -49,7 +50,7 @@ class StaticFileService(prefix: String) extends Service[Request, Response] with 
   }
 
 
-  def apply(request: Request) = {
+  def apply(request: ExceptionatorRequest) = {
     val path = if (request.path.startsWith("/content")) {
       request.path
     } else {
@@ -74,11 +75,11 @@ class StaticFileService(prefix: String) extends Service[Request, Response] with 
 }
 
 class ExceptionatorHttpService(
-    fileService: StaticFileService,
-    apiService: ApiHttpService,
-    incomingService: IncomingHttpService) extends Service[Request, Response] {
+    fileService: Service[ExceptionatorRequest, Response],
+    apiService: Service[ExceptionatorRequest, Response],
+    incomingService: Service[ExceptionatorRequest, Response]) extends Service[ExceptionatorRequest, Response] {
 
-  def apply(request: Request) = {
+  def apply(request: ExceptionatorRequest) = {
     // This is how you parse request parameters
     val queryString = new QueryStringDecoder(request.getUri())
     val params = queryString.getParameters().asScala
@@ -156,7 +157,7 @@ object ExceptionatorServer extends Logger {
 
 
     // Start Http Service
-    val service = ExceptionFilter andThen
+    val service = ExceptionFilter andThen new DefaultRequestEnricher andThen
       new ExceptionatorHttpService(
         new StaticFileService(""),
         new ApiHttpService(noticeActions, bucketActions, incomingActions.bucketFriendlyNames),
