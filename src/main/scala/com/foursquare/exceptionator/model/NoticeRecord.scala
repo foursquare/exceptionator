@@ -50,5 +50,3 @@ object NoticeRecord extends NoticeRecord with MongoMetaRecord[NoticeRecord] with
     rec
   } 
 }
-
-

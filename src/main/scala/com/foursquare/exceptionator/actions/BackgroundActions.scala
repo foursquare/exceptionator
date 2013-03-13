@@ -5,6 +5,10 @@ package com.foursquare.exceptionator.actions
 import com.foursquare.exceptionator.filter.ProcessedIncoming
 import com.twitter.util.Future
 
+trait HasBackgroundActions {
+  def backgroundActions: BackgroundActions
+}
+
 trait BackgroundAction {
   def postSave(processedIncoming: ProcessedIncoming): Future[Unit]
 }

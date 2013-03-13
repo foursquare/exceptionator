@@ -1,3 +1,5 @@
+organization := "com.foursquare"
+
 name := "exceptionator"
 
 version := "2.0-beta16"

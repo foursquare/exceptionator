@@ -4,8 +4,11 @@ package com.foursquare.exceptionator.service
 
 import com.codahale.jerkson.Json.{parse, stream}
 import com.foursquare.exceptionator.actions.IndexActions
+import com.foursquare.exceptionator.actions.{HasNoticeActions, HasBucketActions, HasUserFilterActions}
+import com.foursquare.exceptionator.loader.service.HasPluginLoaderService
+import com.foursquare.exceptionator.loader.concrete.ConcretePluginLoaderService
 import com.foursquare.exceptionator.actions.concrete.{ConcreteBackgroundActions, ConcreteBucketActions,
-  ConcreteIncomingActions, ConcreteNoticeActions, FilteredConcreteIncomingActions}
+  ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions, FilteredConcreteIncomingActions}
 import com.foursquare.exceptionator.util.{Config, Logger, ConcreteMailSender, ConcreteBlamer}
 import com.mongodb.{Mongo, DBAddress, MongoException, ServerAddress}
 import com.twitter.finagle.builder.{ServerBuilder, Server}
@@ -80,21 +83,16 @@ class ExceptionatorHttpService(
     incomingService: Service[ExceptionatorRequest, Response]) extends Service[ExceptionatorRequest, Response] {
 
   def apply(request: ExceptionatorRequest) = {
-    // This is how you parse request parameters
-    val queryString = new QueryStringDecoder(request.getUri())
-    val params = queryString.getParameters().asScala
-    val path = queryString.getPath()
-
-    if (!path.startsWith("/api/")) {
+    if (!request.path.startsWith("/api/")) {
       fileService(request)
     } else {
-      request.method match {
-        case HttpMethod.POST =>
-          incomingService(request)
-        case HttpMethod.GET =>
-          apiService(request)
-        case _ =>
-          ServiceUtil.errorResponse(HttpResponseStatus.METHOD_NOT_ALLOWED)
+      // TODO(johng) why did i make this hard on myself?
+      if (request.method == HttpMethod.POST && 
+          ( request.path.startsWith("/api/notice") ||
+            request.path.startsWith("/api/multi-notice"))) {
+        incomingService(request)
+      } else {
+        apiService(request)
       }
     }
   }
@@ -133,16 +131,24 @@ object ExceptionatorServer extends Logger {
     logger.info("Starting ExceptionatorServer")
     Config.defaultInit()
 
-    // Create services
-    val backgroundActions = new ConcreteBackgroundActions
-    val bucketActions = new ConcreteBucketActions
-    val noticeActions = new ConcreteNoticeActions
-    val incomingActions = new FilteredConcreteIncomingActions(
-      new ConcreteIncomingActions(noticeActions, bucketActions))
+    val services = new HasBucketActions
+        with HasNoticeActions
+        with HasUserFilterActions
+        with HasPluginLoaderService {
+      lazy val noticeActions = new ConcreteNoticeActions
+      lazy val bucketActions = new ConcreteBucketActions
+      lazy val userFilterActions = new ConcreteUserFilterActions
+      lazy val pluginLoader = new ConcretePluginLoaderService(this)
+    }
 
-      
+    // Create services
+    val incomingActions = new FilteredConcreteIncomingActions(
+      new ConcreteIncomingActions(services))
+
     // Start mongo
-    bootMongo(List(noticeActions, bucketActions))
+    bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
+
+    val backgroundActions = new ConcreteBackgroundActions(services)
 
     // Start ostrich
     val runtime = RuntimeEnvironment(this, Array[String]())
@@ -160,7 +166,7 @@ object ExceptionatorServer extends Logger {
     val service = ExceptionFilter andThen new DefaultRequestEnricher andThen
       new ExceptionatorHttpService(
         new StaticFileService(""),
-        new ApiHttpService(noticeActions, bucketActions, incomingActions.bucketFriendlyNames),
+        new ApiHttpService(services, incomingActions.bucketFriendlyNames),
         new IncomingHttpService(incomingActions, backgroundActions))
 
     val server: Server = ServerBuilder()

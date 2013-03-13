@@ -34,7 +34,8 @@
     ],
 
     "postSaveActions": [
-      "com.foursquare.exceptionator.actions.concrete.EmailFreshExceptionBackgroundAction"
+      "com.foursquare.exceptionator.actions.concrete.EmailFreshExceptionBackgroundAction",
+      "com.foursquare.exceptionator.actions.concrete.ApplyUserFiltersBackgroundAction"
     ]
 
   },
@@ -80,6 +81,6 @@
     ]
   },
   "git": {
-    "repo": "../../3foursquare.web"
+    "repo": "../../foursquare.web"
   }
 }

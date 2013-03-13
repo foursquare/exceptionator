@@ -42,10 +42,3 @@ case class Incoming (
     RegexUtil.matchesAPattern(l, "backtrace.interesting.filter")
   }
 }
-
-case class ProcessedIncoming(
-  id: ObjectId,
-  incoming: Incoming,
-  tags: Set[String],
-  keywords: Set[String],
-  buckets: Set[BucketId])

@@ -22,7 +22,10 @@
     <div class="navbar-inner">
       <div class="container-fluid">
         <a class="brand" id="navbar_title">Exceptionator</a>
-        <ul class="nav pull-right"><li><a class="" id="pause"> p to pause </a></li><ul>
+        <ul class="nav pull-right">
+          <li><a class="" id="pause"> p to pause </a></li>
+          <li><a class="" id="user_menu"></a></li>
+        <ul>
       </div>
     </div>
   </div>
@@ -151,6 +154,14 @@
           looper();
         }
       });
+
+      if (data.userId) {
+        var userMenu = $("#user_menu");
+        userMenu.text(data.userId);
+        userMenu.click(function(e) {
+          Exceptionator.Router.navigate('filters', {trigger: true});
+        });
+      }
 
       Exceptionator.Config = data;
       Exceptionator.App = new Exceptionator.AppView({el: $('#notice_buckets')});

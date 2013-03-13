@@ -14,6 +14,7 @@ import com.foursquare.rogue.LiftRogue._
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern
+import scala.collection.immutable.NumericRange
 
 
 
@@ -29,14 +30,12 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     })
   }
 
-  def get(ids: List[String], noticesPerBucketLimit: Option[Int], now: DateTime): List[Outgoing] = {
-    val buckets = BucketRecord.where(_._id in ids).fetch
-    val noticeIds = buckets.flatMap(bucket => {
-      noticesPerBucketLimit match {
-        case Some(limit) => bucket.notices.value.takeRight(limit)
-        case None => bucket.notices.value
-      }
-    }).toSet
+  def getHistograms(
+    ids: List[String],
+    now: DateTime,
+    includeMonth: Boolean,
+    includeDay: Boolean,
+    includeHour: Boolean): List[BucketRecordHistogram] = {
 
     def monthFmt(t: DateTime) = Hash.fieldNameEncode(t.getMonthOfYear)
     def dayFmt(t: DateTime) = Hash.fieldNameEncode(t.getMonthOfYear) + Hash.fieldNameEncode(t.getDayOfMonth)
@@ -48,28 +47,67 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
 
     // We want to show the last hour, last day, last month, but that will always span
     // two buckets except for one (minute, hour, day) of the (hour, day, month)
-    val bucketHistogramIds = (
+    val bucketHistogramIds: Set[String] = (
       // Last 2 months
-      Set(now.minusMonths(1), now).map(monthFmt _)
-        .flatMap(month => ids.map("%s:%s".format(month, _))) ++
+      (if (includeMonth) {
+        Set(now.minusMonths(1), now).map(monthFmt _)
+        .flatMap(month => ids.map("%s:%s".format(month, _)))
+      } else {
+        Set()
+      })
+
+      ++
 
       // Last 2 days
+      (if (includeDay) {
       Set(now.minusDays(1), now).map(dayFmt _)
-        .flatMap(month => ids.map("%s:%s".format(month, _))) ++
+        .flatMap(day => ids.map("%s:%s".format(day, _)))
+      } else {
+        Set()
+      })
+
+      ++
 
       // Last 2 hours
-      Set(now.minusHours(1), now).map(hourFmt _)
-        .flatMap(month => ids.map("%s:%s".format(month, _))))
+      (if (includeHour) {
+        Set(now.minusHours(1), now).map(hourFmt _)
+        .flatMap(hour => ids.map("%s:%s".format(hour, _)))
+      } else {
+        Set()
+      })
+    )
+    BucketRecordHistogram.where(_._id in bucketHistogramIds).fetch
+  }
 
+  def get(ids: List[String], noticesPerBucketLimit: Option[Int], now: DateTime): List[Outgoing] = {
+    val buckets = BucketRecord.where(_._id in ids).fetch
+    val noticeIds = buckets.flatMap(bucket => {
+      noticesPerBucketLimit match {
+        case Some(limit) => bucket.notices.value.takeRight(limit)
+        case None => bucket.notices.value
+      }
+    }).toSet
 
-    val histograms = BucketRecordHistogram.where(_._id in bucketHistogramIds).fetch
+    val histograms = getHistograms(ids, now, true, true, true)
     val notices = NoticeRecord.where(_._id in noticeIds).fetch
     notices.sortBy(_.id).reverse.map(n => {
       val nbSet = n.buckets.value.toSet
       val noticeBuckets = buckets.filter(b => nbSet(b.id))
-      val noticeBucketHistograms = histograms.filter(h => nbSet(h.bucket))
-      MongoOutgoing(n).addBuckets(noticeBuckets, noticeBucketHistograms, now)
+      val noticeBucketRecordHistograms = histograms.filter(h => nbSet(h.bucket))
+      MongoOutgoing(n).addBuckets(noticeBuckets, noticeBucketRecordHistograms, now)
     })
+  }
+
+  def lastHourHistogram(id: BucketId, now: DateTime): List[Int] = {
+    val fullMap = getHistograms(List(id.toString), now, false, false, true)
+      .map(_.toEpochMap(now))
+      .foldLeft(Map[String,Int]()){_ ++ _}
+    val oneHourAgo = now.minusHours(1)
+      .withSecondOfMinute(0)
+      .withMillisOfSecond(0)
+    NumericRange[Long](oneHourAgo.getMillis, oneHourAgo.plusHours(1).getMillis, 60 * 1000L).map(t => {
+      fullMap.get(t.toString).getOrElse(0)
+    }).toList
   }
 
   def get(name: String, key: String, now: DateTime) = {
@@ -135,7 +173,12 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
       BucketRecordHistogram.where(_._id eqs bucketMonth).modify(_.histogram at day inc n).upsertOne()
     }
 
-    SaveResult(bucket, existing.map(b => BucketId(b.id)), noticesToRemove)
+    val oldNoticeCount = existing.map(_.noticeCount.value).getOrElse(0)
+
+    SaveResult(
+      bucket.count(oldNoticeCount + 1),
+      existing.map(b => BucketId(b.id, oldNoticeCount)),
+      noticesToRemove)
   }
 
   def deleteOldHistograms(time: Long, doIt: Boolean = true) {

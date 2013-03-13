@@ -12,9 +12,20 @@ Exceptionator.ListTypes = {
   SEARCH: 'search'
 }
 
+Exceptionator.formatDate = function(value) {
+  "use strict";
+  var d = new Date(value)
+  if(d.clone().clearTime().equals(new Date().clearTime())) {
+    return d.toString('h:mm:ss tt');
+  } else {
+    return d.toString('dddd, MMMM dd, yyyy h:mm:ss tt');
+  }
+}
+
 Exceptionator.GraphSpan = Exceptionator.GraphSpans.LAST_HOUR;
 Exceptionator.Limit = 10;
 Exceptionator.MouseDown = 0;
+
 
 
 /*
@@ -23,7 +34,7 @@ Exceptionator.MouseDown = 0;
 Exceptionator.Notice = Backbone.Model.extend({
   initialize: function() {
     if(this.get('d')) {
-      this.set({d_fmt: Exceptionator.Notice.formatDate(this.get('d'))})
+      this.set({d_fmt: Exceptionator.formatDate(this.get('d'))})
     }
     _.each(this.get('bkts'), function(bucket, name) {
       if (name in Exceptionator.Config.friendlyNames) {
@@ -52,15 +63,6 @@ Exceptionator.Notice = Backbone.Model.extend({
     return this.get('bkts')[bucket]['h'][fieldName];
   }
 },{
-  formatDate: function(value) {
-    "use strict";
-    var d = new Date(value)
-    if(d.clone().clearTime().equals(new Date().clearTime())) {
-      return d.toString('h:mm:ss tt');
-    } else {
-      return d.toString('dddd, MMMM dd, yyyy h:mm:ss tt');
-    }
-  },
 
   emptyHistogram: function() {
     var dateNow = new Date()
@@ -392,12 +394,197 @@ Exceptionator.AppView = Backbone.View.extend({
     return this;
   },
 
+  fetchError: function(collection, xhr, options) {
+    window.location.reload();
+  },
+
   fetch: function() {
     _.each(this.noticeListViews, function(view) {
-      view.renderFetch().collection.fetch();
-    });
+      view.renderFetch().collection.fetch({error: this.fetchError});
+    }, this);
   }
 });
+
+
+/*
+ * UserFilter
+ */
+Exceptionator.UserFilter = Backbone.Model.extend({
+  idAttribute: '_id',
+  urlRoot: '/api/filters',
+  arrayFields: {'cc': true, 'c': true},
+
+  defaults: function() {
+    return {
+      'lm': 0,
+      'mute': 0,
+      'u': Exceptionator.Config.userId
+    }
+  },
+
+  initialize: function() {
+    this.calculateLabels();
+  },
+
+  calculateLabels: function() {
+    this.set({lm_fmt: Exceptionator.formatDate(this.get('lm'))})
+    var mute = +(this.get('mute'));
+    if (mute > new Date().getTime()) {
+      this.set({mute_fmt: Exceptionator.formatDate(mute)});
+    } else {
+      this.set({mute_fmt: ''});
+    }
+  },
+
+  mute: function(muteMinutes) {
+    this.set({mute: (new Date().getTime() + muteMinutes * 60 * 1000).toString() });
+    this.save();
+  },
+
+  setValues: function(serializedFormArray, view) {
+    _.each(serializedFormArray, function(elem) {
+      if (elem.name in this.arrayFields) {
+        this.set(elem.name, _.filter(elem.value.split(/\s+/), function(t) { return t; }));
+      } else {
+        this.set(elem.name, elem.value);
+      }
+    }, this);
+    this.save();
+    this.fetch({success: function() { view.render(); }})
+  }
+})
+
+/*
+ * UserFilterView
+ */
+Exceptionator.UserFilterView = Backbone.View.extend({
+  tagName: "div",
+
+  events: {
+    "click .btn": "processAction",
+    "change .triggerType": "triggerTypeChange",
+    "keyup .liveTitle": "titleChange"
+  },
+
+  mutePrefix: "mute_",
+
+
+  baseRender: function(template) {
+    this.$el.empty();
+    this.$el.append(template({
+      f: this.model.toJSON(),
+      u: Exceptionator.Config.userId
+    }));
+  },
+
+  render: function() {
+    this.baseRender(Exceptionator.Soy.userFilter);
+    this.renderConfig(this.model.get('tt'));
+    this.renderTitle(this.model.get('n'));
+    return this;
+  },
+
+  renderCompact: function() {
+    this.baseRender(Exceptionator.Soy.userFilterCompact);
+    return this;
+  },
+
+  renderConfig: function(triggerType) {
+    if (triggerType === 'threshold') {
+      this.$el.find('.thresholdCfg').show();
+    } else {
+      this.$el.find('.thresholdCfg').hide();
+    }
+  },
+
+  triggerTypeChange: function(e) {
+    this.renderConfig(e.currentTarget.value);
+  },
+
+  renderTitle: function(title) {
+    var id = this.model.get('_id');
+    if (id && !title) {
+        title = id;
+    } else if (!title) {
+      title = 'New Filter';
+    }
+    this.$el.find('legend').text(title);
+  },
+
+  titleChange: function(e) {
+    this.renderTitle(e.currentTarget.value);
+  },
+
+  processAction: function(e) {
+    var actionType = e.currentTarget.value
+    if (actionType === "delete") {
+      this.model.destroy({success: function() {Exceptionator.Router.navigate('/filters', {trigger: true});}});
+    } else {
+      if (actionType.substring(0, this.mutePrefix.length) === this.mutePrefix) {
+        var muteMinutes = +(actionType.substring(this.mutePrefix.length))
+        this.model.mute(muteMinutes);
+      } else if (actionType == 'update' || actionType == 'save') {
+        this.model.setValues(this.$el.find('form').serializeArray(), this);
+      }
+      this.model.calculateLabels();
+      this.render();
+    }
+    return false;
+  }
+});
+
+/*
+ * UserFilterList
+ */
+Exceptionator.UserFilterList = Backbone.Collection.extend({
+  model: Exceptionator.UserFilter,
+  url: function() {
+    return '/api/filters'
+  }
+});
+
+/*
+ * UserFilterListView
+ */
+Exceptionator.UserFilterListView = Backbone.View.extend({
+  tagName: "div",
+  events: {
+    "click .filterAdd": "addNew"
+  },
+
+  initialize: function(options) {
+    this.collection.on('add', this.add, this);
+    this.collection.on('reset', this.render, this);
+  },
+
+  addNew: function() {
+    var model = new Exceptionator.UserFilter();
+    model.on('sync', this.render, this);
+    this.collection.add(model);
+  },
+
+  add: function(m, compact) {
+    var view = new Exceptionator.UserFilterView({model: m});
+    if (compact === true) {
+      view.renderCompact();
+    } else {
+      view.render();
+    }
+    this.$el.find('.filters').append(view.el);
+  },
+
+  render: function() {
+    this.$el.empty();
+    this.$el.append(Exceptionator.Soy.userFilterList({
+      u: Exceptionator.Config.userId
+    }));
+    _.each(this.collection.models, function(m) {
+      this.add(m, true);
+    }, this);
+    return this;
+  }
+});
+
 
 Exceptionator.Routing = Backbone.Router.extend({
   initialize: function(options) {
@@ -409,7 +596,10 @@ Exceptionator.Routing = Backbone.Router.extend({
     "":                               "index",
     "search/?q=:query":               "search",
     "notices/:bucketName/:bucketKey": "bucket",
-    "notices/:bucketName":            "bucketGroup"
+    "notices/:bucketName":            "bucketGroup",
+    "filters":                        "filters",
+    "filters/":                       "filters",
+    "filters/:filterId":              "filters"
   },
 
   route_: function(listDefs) {
@@ -421,6 +611,30 @@ Exceptionator.Routing = Backbone.Router.extend({
 
     if (Exceptionator.Paused) {
       this.app.fetch();
+    }
+  },
+
+  filters: function(filterId) {
+    this.app.clear();
+    if (filterId) {
+      var filter = new Exceptionator.UserFilter({_id: filterId});
+      filter.fetch();
+      var view = new Exceptionator.UserFilterView({
+        el: this.app.el, // take over the main view
+        model: filter
+      });
+      filter.fetch({ success: function() { view.render(); }});
+    } else {
+      var filterList = new Exceptionator.UserFilterList();
+      var view = new Exceptionator.UserFilterListView({
+        el: this.app.el, // take over the main view
+        collection: filterList
+      });
+      filterList.fetch({ success: function() { console.log('success'); view.render(); console.log('rendered');},
+        error: function() {
+          console.log('badddd');
+        }
+      });
     }
   },
 
@@ -439,5 +653,4 @@ Exceptionator.Routing = Backbone.Router.extend({
   bucketGroup: function(bucketName) {
     this.route_([{list: {bucketName: decodeURIComponent(bucketName)}}]);
   }
-
 });

@@ -2,7 +2,7 @@
 
 package com.foursquare.exceptionator.actions.concrete
 
-import com.foursquare.exceptionator.actions.{IncomingActions, BucketActions, NoticeActions}
+import com.foursquare.exceptionator.actions.{IncomingActions, HasBucketActions, HasNoticeActions}
 import com.foursquare.exceptionator.filter.{BucketSpec, FilteredIncoming, FilteredSaveService,
     PreSaveFilter, ProcessedIncoming}
 import com.foursquare.exceptionator.filter.concrete.FreshBucketFilter
@@ -30,7 +30,7 @@ class FilteredConcreteIncomingActions(service: Service[FilteredIncoming, Process
   def apply(incoming: FilteredIncoming): Future[ProcessedIncoming] = filteredService(incoming)
 }
 
-class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: BucketActions)
+class ConcreteIncomingActions(services: HasNoticeActions with HasBucketActions)
     extends Service[FilteredIncoming, ProcessedIncoming] with IncomingActions with Logger {
 
   val saveFuturePool = FuturePool(Executors.newFixedThreadPool(10))
@@ -55,13 +55,13 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
   }
 
   def doMaintenance(now: Long) {
-    bucketActions.deleteOldHistograms(now, true)
+    services.bucketActions.deleteOldHistograms(now, true)
 
     // Find really stale buckets that haven't been updated for 60 days. And delete them
     Stats.time("incomingActions.deleteOldBuckets") {
-      val toRemove = bucketActions.deleteOldBuckets(now)
+      val toRemove = services.bucketActions.deleteOldBuckets(now)
       toRemove.foreach(tr => tr.noticesToRemove.foreach(n =>
-        noticeActions.removeBucket(n, tr.bucket)
+        services.noticeActions.removeBucket(n, tr.bucket)
       ))
     }
   }
@@ -73,12 +73,12 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
     val buckets = incoming.buckets
 
 
-    val incomingId = noticeActions.save(incoming.incoming, tags, kw, buckets)
+    val incomingId = services.noticeActions.save(incoming.incoming, tags, kw, buckets)
 
     // Increment /create buckets
     val results = buckets.map(bucket => {
       val max = bucketSpecs(bucket.name).maxRecent
-      bucketActions.save(incomingId, incoming.incoming, bucket, max)
+      services.bucketActions.save(incomingId, incoming.incoming, bucket, max)
     })
 
     // As long as nothing that already exists invalidates freshness, we call it fresh
@@ -87,10 +87,10 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
           bucketSpecs(r.bucket.name).invalidatesFreshness)) {
 
         val freshKey = BucketId(FreshBucketFilter.name, FreshBucketFilter.key(incoming).get)
-        val res = bucketActions.save(incomingId, incoming.incoming, freshKey, FreshBucketFilter.maxRecent)
+        val res = services.bucketActions.save(incomingId, incoming.incoming, freshKey, FreshBucketFilter.maxRecent)
 
         Stats.time("incomingActions.add") {
-          noticeActions.addBucket(incomingId, freshKey)
+          services.noticeActions.addBucket(incomingId, freshKey)
         }
         buckets + freshKey
       } else {
@@ -103,7 +103,7 @@ class ConcreteIncomingActions(noticeActions: NoticeActions, bucketActions: Bucke
 
     // Fix up old notices that have been kicked out
     Stats.time("incomingActions.remove") {
-      remove.foreach(bucketRemoval => noticeActions.removeBucket(bucketRemoval._1, bucketRemoval._2))
+      remove.foreach(bucketRemoval => services.noticeActions.removeBucket(bucketRemoval._1, bucketRemoval._2))
     }
 
     // A bit racy, but only approximation is needed.  Want to trim histograms
