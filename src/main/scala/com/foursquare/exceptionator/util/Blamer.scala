@@ -54,12 +54,14 @@ class GitBlamer(val root: File) extends Blamer with Logger {
     process().rescue { case e => {
       fixAttempt().flatMap { (r: ProcessResult) =>
          process()
-      }
+       } onFailure { e =>
+        Future.exception[ProcessResult](e)
+       }
     }}
   }
 
   def fetch(tag: String): Future[ProcessResult] = {
-    Process(List("git", "fetch", "+refs/heads/*:refs/remotes/origin/*", "refs/tags/:refs/tags/"), root)
+    Process(List("git", "fetch", "origin", "+refs/heads/*:refs/remotes/origin/*", "refs/tags/*:refs/tags/*"), root)
   }
 
   def findFile(tag: String, name: String, hints: Set[String]): Future[Option[String]] = {
@@ -100,7 +102,7 @@ class GitBlamer(val root: File) extends Blamer with Logger {
 
     findFile(tag, fileName, hints).flatMap { fileOpt => fileOpt.map(f => {
       val gblame = retry(
-        () => Process(List("git", "blame", tag, "-w", "--porcelain", "-L%d,%d".format(line, line), f), root),
+        () => Process(List("git", "blame", tag, "-w", "--porcelain", "-L%d,%d".format(line, line), "--", f), root),
         () => fetch(tag))
       gblame.map(pr => Some(pr.out.foldLeft(Blame(f, line)){ (b, l) => updateBlame(l, b) }))
       }).getOrElse(Future.value[Option[Blame]](None))
