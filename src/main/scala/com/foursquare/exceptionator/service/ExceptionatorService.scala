@@ -19,7 +19,7 @@ import com.twitter.finagle.stats.OstrichStatsReceiver
 import com.twitter.ostrich.admin.{AdminServiceFactory, RuntimeEnvironment, StatsFactory, TimeSeriesCollectorFactory}
 import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, Throw}
-import java.io.InputStream
+import java.io.{InputStream, IOException}
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import net.liftweb.mongodb.{DefaultMongoIdentifier, MongoDB}
@@ -114,9 +114,11 @@ object ExceptionatorServer extends Logger {
 
     logger.info("Using mongo: %s".format(dbServerConfig)) 
     logger.info("Using database: %s".format(dbname))
-    MongoDB.defineDb(DefaultMongoIdentifier, mongo, dbname)
-
     try {
+      if (mongo.getAddress() == null) {
+        throw new IOException("Failed to get address from mongo.  Is mongo reachable and running?")
+      }
+      MongoDB.defineDb(DefaultMongoIdentifier, mongo, dbname)
       indexesToEnsure.foreach(_.ensureIndexes)
     } catch {
       case e: MongoException =>
@@ -146,7 +148,14 @@ object ExceptionatorServer extends Logger {
       new ConcreteIncomingActions(services))
 
     // Start mongo
-    bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
+    try {
+      bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
+    } catch {
+      case e: IOException => {
+        logger.error("Failed to connect to mongo", e)
+        System.exit(1)
+      }
+    }
 
     val backgroundActions = new ConcreteBackgroundActions(services)
 
