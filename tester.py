@@ -1,4 +1,7 @@
 #!/usr/bin/python
+
+# Copyright 2013 Foursquare Labs Inc. All Rights Reserved.
+
 import sys
 import subprocess
 import time

@@ -36,7 +36,7 @@ Prerequisites:
 
 To enable and configure git blame support:
 
-*  Supply a local clone of the git repository in the gitRoot option
+*  Supply a local clone of the git repository in the `git.repo` option
 *  Supply `backtrace.interesting.filter`, a list of regular expressions specifying lines to 
    include when traversing down the stack to find who to blame (match at least one)
 *  Optionally supply `backtrace.interesting.filterNot`, a list of regular expressions specifying lines to 
