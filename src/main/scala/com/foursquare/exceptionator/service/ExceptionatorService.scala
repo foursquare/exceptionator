@@ -101,16 +101,19 @@ class ExceptionatorHttpService(
 
 object ExceptionatorServer extends Logger {
   val defaultPort = 8080
+  val defaultStatsPort = defaultPort + 1
+  val defaultDbHost = "localhost:27017"
+  val defaultDbName = "test"
 
   def bootMongo(indexesToEnsure: List[IndexActions] = Nil) {
     // Mongo
-    val dbServerConfig = Config.opt(_.getString("db.host")).getOrElse("127.0.0.1:27017")
+    val dbServerConfig = Config.opt(_.getString("db.host")).getOrElse(defaultDbHost)
     val dbServers = dbServerConfig.split(",").toList.map(a => a.split(":") match {
       case Array(h,p) => new ServerAddress(h, p.toInt)
       case _ => throw new Exception("didn't understand host " + a)
     })
     val mongo = new Mongo(dbServers.asJava)
-    val dbname = Config.opt(_.getString("db.name")).getOrElse("test")
+    val dbname = Config.opt(_.getString("db.name")).getOrElse(defaultDbName)
 
     logger.info("Using mongo: %s".format(dbServerConfig)) 
     logger.info("Using database: %s".format(dbname))
@@ -163,7 +166,7 @@ object ExceptionatorServer extends Logger {
     val runtime = RuntimeEnvironment(this, Array[String]())
 
     AdminServiceFactory(
-      httpPort = (Config.opt(_.getInt("stats.port")).getOrElse(defaultPort + 1)))
+      httpPort = (Config.opt(_.getInt("stats.port")).getOrElse(defaultStatsPort)))
       .addStatsFactory(StatsFactory(reporters = List(TimeSeriesCollectorFactory())))
       .apply(runtime)
 

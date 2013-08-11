@@ -20,7 +20,7 @@ Configuration is json-based.  A sample config file (just fill in email.pass) is 
 
 Some default values to note:
 
-    port: 8080
+    http.port: 8080
     db.host: localhost:27017
     db.name: test
     git.repo: undefined
@@ -30,8 +30,8 @@ Git Blame Support
 -----------------
 Prerequisites:
 
-*  Ensure that the running user has access to fetch new tags from git without entering credentials
-*  Supply a valid git tag in the  "v" ("app-version" for airbrakers) field of incoming notices
+*  Ensure that the running user has access to fetch new commits from git without entering credentials
+*  Supply a valid git revision as `"v": "<revision>"` or as `"env": { "git": "<revision>" }`
 
 
 To enable and configure git blame support:
