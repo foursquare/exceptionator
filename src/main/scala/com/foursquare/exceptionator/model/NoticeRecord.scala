@@ -10,7 +10,7 @@ import net.liftweb.json._
 import org.bson.types.ObjectId
 import org.joda.time.{DateTime, DateTimeZone}
 import com.foursquare.rogue._
-import com.foursquare.rogue.index.{Asc, IndexedRecord}
+import com.foursquare.index.{Asc, IndexedRecord}
 import com.foursquare.rogue.LiftRogue._
 import java.util.Date
 

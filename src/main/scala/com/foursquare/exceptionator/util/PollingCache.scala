@@ -16,7 +16,7 @@ class PollingCache[T](fetch: () => T, frequency: Int) extends Logger {
     try {
       cache = fetch()
     } catch {
-      case e => logger.error("Error fetching cache", e)
+      case e => logger.error(e, "Error fetching cache")
     }
   }
   def get: T = cache

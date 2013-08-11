@@ -10,7 +10,7 @@ import com.foursquare.exceptionator.loader.concrete.ConcretePluginLoaderService
 import com.foursquare.exceptionator.actions.concrete.{ConcreteBackgroundActions, ConcreteBucketActions,
   ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions, FilteredConcreteIncomingActions}
 import com.foursquare.exceptionator.util.{Config, Logger, ConcreteMailSender, ConcreteBlamer}
-import com.mongodb.{Mongo, DBAddress, MongoException, ServerAddress}
+import com.mongodb.{Mongo, DBAddress, MongoException, MongoOptions, ServerAddress}
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.{RichHttp, Http, Response, Request}
 import com.twitter.finagle.http.filter.ExceptionFilter
@@ -112,22 +112,18 @@ object ExceptionatorServer extends Logger {
       case Array(h,p) => new ServerAddress(h, p.toInt)
       case _ => throw new Exception("didn't understand host " + a)
     })
-    val mongo = new Mongo(dbServers.asJava)
-    val dbname = Config.opt(_.getString("db.name")).getOrElse(defaultDbName)
-
-    logger.info("Using mongo: %s".format(dbServerConfig)) 
-    logger.info("Using database: %s".format(dbname))
+    val mongoOptions = new MongoOptions()
+    mongoOptions.setSocketTimeout(10 * 1000)
     try {
-      if (mongo.getAddress() == null) {
-        throw new IOException("Failed to get address from mongo.  Is mongo reachable and running?")
-      }
+      val mongo = new Mongo(dbServers.asJava, mongoOptions)
+      val dbname = Config.opt(_.getString("db.name")).getOrElse(defaultDbName)
       MongoDB.defineDb(DefaultMongoIdentifier, mongo, dbname)
       indexesToEnsure.foreach(_.ensureIndexes)
     } catch {
       case e: MongoException =>
-        logger.error("Failed ensure indexes on %s because: %s.  Is mongo running?"
-          .format(dbServerConfig, e.getMessage), e)
-        throw e;
+        logger.error(e, "Failed ensure indexes on %s because: %s.  Is mongo running?"
+          .format(dbServerConfig, e.getMessage))
+        throw e
     }
   }
   
@@ -155,7 +151,7 @@ object ExceptionatorServer extends Logger {
       bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
     } catch {
       case e: IOException => {
-        logger.error("Failed to connect to mongo", e)
+        logger.error(e, "Failed to connect to mongo")
         System.exit(1)
       }
     }

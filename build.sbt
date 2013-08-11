@@ -2,7 +2,7 @@ organization := "com.foursquare"
 
 name := "exceptionator"
 
-version := "2.0-beta17"
+version := "2.0-beta18"
 
 scalaVersion := "2.9.1"
 
@@ -16,16 +16,17 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "com.codahale"            %% "jerkson"              % "0.4.2"      withSources(),
-  "com.foursquare"          %% "rogue-field"          % "2.0.0-RC1" intransitive(),
-  "com.foursquare"          %% "rogue-core"           % "2.0.0-RC1" intransitive(),
-  "com.foursquare"          %% "rogue-lift"           % "2.0.0-RC1" intransitive(),
-  "net.liftweb"             %% "lift-mongodb-record"  % "2.4-M5",
+  "com.foursquare"          %% "rogue-field"          % "2.2.0" intransitive(),
+  "com.foursquare"          %% "rogue-core"           % "2.2.0" intransitive(),
+  "com.foursquare"          %% "rogue-lift"           % "2.2.0" intransitive(),
+  "com.foursquare"          %% "rogue-index"          % "2.2.0" intransitive(),
+  "net.liftweb"             %% "lift-mongodb-record"  % "2.5.1",
   "com.googlecode.concurrentlinkedhashmap" % "concurrentlinkedhashmap-lru" % "1.2",
   "com.novocode"            %  "junit-interface"      % "0.6"       % "test",
-  "com.twitter"             %  "finagle-http"         % "5.3.23",
-  "com.twitter"             %  "finagle-core"         % "5.3.23",
-  "com.twitter"             %  "finagle-ostrich4"     % "5.3.23",
-  "com.twitter"             %  "ostrich"              % "8.2.3",
+  "com.twitter"             %  "finagle-http"         % "6.3.0",
+  "com.twitter"             %  "finagle-core"         % "6.3.0",
+  "com.twitter"             %  "finagle-ostrich4"     % "6.3.0",
+  "com.twitter"             %  "ostrich"              % "9.1.0",
   "com.typesafe"            %  "config"               % "0.4.1",
   "org.scalaj"              %% "scalaj-collection"    % "1.2",
   "org.joda"                %  "joda-convert"         % "1.1",
