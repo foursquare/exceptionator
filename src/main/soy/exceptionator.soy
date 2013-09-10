@@ -6,7 +6,7 @@
  * @param kw keyword term
  */
 {template .kwLink}
-  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/search/?q={$kw}', {literal}{trigger: true}{/literal});">
+  <a class="bucketLink" href="/search/?q={$kw}">
     {$kw}
   </a>
 {/template}
@@ -16,8 +16,8 @@
  * @param b bucket
  */
 {template .bucketLink}
-  <a class="bucketLink" onclick="Exceptionator.Router.navigate('/notices/{$b.nm_uri}/{$b.k_uri}', {literal}{trigger: true}{/literal});">
-    {$b.k |truncate:10} {if $b.n}({$b.n}){/if}
+  <a class="bucketLink" href="/notices/{$b.nm_uri}/{$b.k_uri}" title="{$b.k}">
+    {$b.k |truncate:13} {if $b.n}({$b.n}){/if}
   </a>
 {/template}
 
@@ -110,7 +110,7 @@
   <div class="exc_header">
     {foreach $k in keys($n.bkts)}
     {if $k != 'all'}
-    <div class="exc_n" onclick="event.cancelBubble = true;">
+    <div class="exc_n">
       {$n.bkts[$k].friendlyName} - {sp}
       {call .bucketLink}
         {param b: $n.bkts[$k] /}

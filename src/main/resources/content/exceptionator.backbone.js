@@ -26,6 +26,44 @@ Exceptionator.GraphSpan = Exceptionator.GraphSpans.LAST_HOUR;
 Exceptionator.Limit = 10;
 Exceptionator.MouseDown = 0;
 
+// http://phrogz.net/css/distinct-colors.html
+// H: 0 -> 272, 8
+// S: 90 -> 30, 30
+// V: 90 -> 40, 5
+// Sort: H(D), S(D) V(D)  I: 5
+Exceptionator.COLOR_LIST = [
+  '#e51717',
+  '#99590f',
+  '#d8e6a1',
+  '#0b6c73',
+  '#a1aae6',
+  '#bf4d4d',
+  '#e5a117',
+  '#a1e617',
+  '#17a1e6',
+  '#a55ce6',
+  '#e6a1a1',
+  '#e6cfa1',
+  '#17e64e',
+  '#6b8a99',
+  '#79628c',
+  '#8c300e',
+  '#66540a',
+  '#42a65d',
+  '#0e518c',
+  '#806359',
+  '#e5d817',
+  '#74a695',
+  '#176ae6',
+  '#e56a17',
+  '#7d8059',
+  '#17e6bc',
+  '#0d2b80',
+  '#e6bca1',
+  '#738c0e',
+  '#17d8e6',
+  '#1732e6'
+];
 
 
 /*
@@ -124,9 +162,6 @@ Exceptionator.StaticNoticeView = Backbone.View.extend({
   }
 });
 
-Exceptionator.NoResultsNoticeView = 
-Exceptionator.FetchingNoticeView = 
-
 
 /*
  * NoticeList
@@ -216,11 +251,23 @@ Exceptionator.NoticeListView = Backbone.View.extend({
   tagName: "div",
 
   events: {
-    "click .exc_header": "toggleBody"
+    "click .exc_header": "toggleBody",
+    "click .bucketLink": "handleLinkClick"
   },
 
   toggleBody: function(e) {
     $(e.target).parents('.exc').toggleClass('exc_hidden');
+  },
+
+  handleLinkClick: function(e) {
+    // neat trick from http://dev.tenfarms.com/posts/proper-link-handling
+    if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault();
+      var url = $(e.target).attr("href").replace(/^\//, "");
+      Exceptionator.Router.navigate(url, { trigger: true });
+    } else {
+      e.stopPropagation();
+    }
   },
 
   getTitleEl: function() {
@@ -254,6 +301,13 @@ Exceptionator.NoticeListView = Backbone.View.extend({
       this.showList = true;
     }
     this.noticeViews = {};
+    this.colorQueue = Exceptionator.COLOR_LIST.slice(0); // Copy color list
+
+    this.labelColors = new LRUCache(Exceptionator.COLOR_LIST.length + 1);
+    _.each(Exceptionator.COLOR_LIST, function(color) {
+      this.labelColors.put(color, color);
+    }, this);
+
   },
 
   shouldShowGraph: function() {
@@ -312,11 +366,29 @@ Exceptionator.NoticeListView = Backbone.View.extend({
         legend: { position: "nw" },
         xaxis: { mode: "time", timezone: "browser" }
       };
+      var histograms = _.first(this.collection.histograms(), Exceptionator.NoticeListView.MAX_GRAPH_LINES);
+
+      // reuse existing color, or pick a color at the end of the cache
+      _.each(histograms, function(h) {
+        var color = this.labelColors.get(h.label);
+        if (typeof color == 'undefined') {
+          // sigh, this is what shift() should be doing
+          color = this.labelColors.head.value;
+          this.labelColors.remove(this.labelColors.head.key);
+          if (typeof color == 'undefined') {
+            console.log(this.labelColors);
+          }
+          this.labelColors.put(h.label, color);
+        }
+        h.color = color;
+      }, this);
+
 
       $.plot(
-          this.getGraphEl(),
-          _.first(this.collection.histograms(), Exceptionator.NoticeListView.MAX_GRAPH_LINES),
-          options);
+        this.getGraphEl(),
+        histograms,
+        options);
+
     }
     return this;
   },
