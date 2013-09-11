@@ -87,7 +87,12 @@ class ConcreteIncomingActions(services: HasNoticeActions with HasBucketActions)
           bucketSpecs(r.bucket.name).invalidatesFreshness)) {
 
         val freshKey = BucketId(FreshBucketFilter.name, FreshBucketFilter.key(incoming).get)
-        val res = services.bucketActions.save(incomingId, incoming.incoming, freshKey, FreshBucketFilter.maxRecent)
+
+        val res = services.bucketActions.save(
+          incomingId,
+          incoming.incoming,
+          freshKey,
+          FreshBucketFilter.maxRecent)
 
         Stats.time("incomingActions.add") {
           services.noticeActions.addBucket(incomingId, freshKey)
