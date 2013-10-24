@@ -1,6 +1,6 @@
 #!/bin/sh
 
-LATEST=http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/0.11.2/sbt-launch.jar
+LATEST=http://repo.typesafe.com/typesafe/ivy-releases/org.scala-sbt/sbt-launch/0.13.0/sbt-launch.jar
 
 if [ ! -d .sbtlib ]; then
   mkdir .sbtlib
