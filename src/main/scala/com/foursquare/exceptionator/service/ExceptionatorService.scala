@@ -10,7 +10,7 @@ import com.foursquare.exceptionator.loader.concrete.ConcretePluginLoaderService
 import com.foursquare.exceptionator.actions.concrete.{ConcreteBackgroundActions, ConcreteBucketActions,
   ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions, FilteredConcreteIncomingActions}
 import com.foursquare.exceptionator.util.{Config, Logger, ConcreteMailSender, ConcreteBlamer}
-import com.mongodb.{Mongo, DBAddress, MongoException, MongoOptions, ServerAddress}
+import com.mongodb.{MongoClient, DBAddress, MongoException, MongoClientOptions, ServerAddress}
 import com.twitter.finagle.builder.{ServerBuilder, Server}
 import com.twitter.finagle.http.{RichHttp, Http, Response, Request}
 import com.twitter.finagle.http.filter.ExceptionFilter
@@ -87,7 +87,7 @@ class ExceptionatorHttpService(
       fileService(request)
     } else {
       // TODO(johng) why did i make this hard on myself?
-      if (request.method == HttpMethod.POST && 
+      if (request.method == HttpMethod.POST &&
           ( request.path.startsWith("/api/notice") ||
             request.path.startsWith("/api/multi-notice"))) {
         incomingService(request)
@@ -112,10 +112,11 @@ object ExceptionatorServer extends Logger {
       case Array(h,p) => new ServerAddress(h, p.toInt)
       case _ => throw new Exception("didn't understand host " + a)
     })
-    val mongoOptions = new MongoOptions()
-    mongoOptions.setSocketTimeout(10 * 1000)
+    val mongoOptions = MongoClientOptions.builder
+      .socketTimeout(10 * 1000)
+      .build
     try {
-      val mongo = new Mongo(dbServers.asJava, mongoOptions)
+      val mongo = new MongoClient(dbServers.asJava, mongoOptions)
       val dbname = Config.opt(_.getString("db.name")).getOrElse(defaultDbName)
       MongoDB.defineDb(DefaultMongoIdentifier, mongo, dbname)
       indexesToEnsure.foreach(_.ensureIndexes)
@@ -126,7 +127,7 @@ object ExceptionatorServer extends Logger {
         throw e
     }
   }
-  
+
 
   def main(args: Array[String]) {
     logger.info("Starting ExceptionatorServer")

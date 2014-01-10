@@ -47,7 +47,7 @@ class ConcreteUserFilterActions extends UserFilterActions with IndexActions with
     val oidOpt = try {
       Some(new ObjectId(id))
     } catch {
-      case _ => None
+      case _: IllegalArgumentException => None
     }
     oidOpt.flatMap(oid => UserFilterRecord.where(_._id eqs oid).fetch.headOption)
   }
@@ -57,7 +57,7 @@ class ConcreteUserFilterActions extends UserFilterActions with IndexActions with
     val oidOpt = try {
       Some(new ObjectId(id))
     } catch {
-      case _ => None
+      case _: IllegalArgumentException => None
     }
 
     oidOpt.map(oid => UserFilterRecord.where(_._id eqs oid).bulkDelete_!!!())

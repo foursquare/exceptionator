@@ -67,7 +67,7 @@ class ApiHttpService(
           case HttpMethod.DELETE => deleteFilter(keyOpt, request)
           case HttpMethod.PUT | HttpMethod.POST =>
             saveFilter(request)
-          case _ => 
+          case _ =>
             InternalResponse.notFound
         }
       case ApiHttpService.Notices(name, key) =>
@@ -114,6 +114,7 @@ class ApiHttpService(
       case (None, None) => recent("s", request)
       case (Some(n), None) => recent(n, request)
       case (Some(n), Some(k)) => bucketNotices(n, k, request)
+      case _ => InternalResponse.notFound
     }
   }
 

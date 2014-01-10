@@ -14,7 +14,7 @@ class ConcretePluginLoaderService (
   def defaultConstruct[T](classNames: Seq[String])(implicit man: Manifest[T]): Seq[T] = {
     val classLoader = getClass.getClassLoader
     classNames.map(className => {
-      logger.info("Loading %s: %s".format(man.erasure.getSimpleName, className))
+      logger.info("Loading %s: %s".format(man.runtimeClass.getSimpleName, className))
       classLoader.loadClass(className).newInstance.asInstanceOf[T]
     })
   }
@@ -22,7 +22,7 @@ class ConcretePluginLoaderService (
   def serviceConstruct[T](classNames: Seq[String])(implicit man: Manifest[T]): Seq[T] = {
     val classLoader = getClass.getClassLoader
     classNames.flatMap(className => {
-      logger.info("Loading %s: %s".format(man.erasure.getSimpleName, className))
+      logger.info("Loading %s: %s".format(man.runtimeClass.getSimpleName, className))
       classLoader.loadClass(className).getConstructors.toList.find(_.getParameterTypes match {
         case Array(t1) => {
           t1.isInstance(services)
