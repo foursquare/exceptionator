@@ -5,9 +5,9 @@ An exception aggregator using mongodb.
 
 Usage
 -----
-   
+
     ./sbt assembly
-    java -jar target/exceptionator-assembly-2.0-beta19.jar
+    java -jar target/exceptionator-assembly-2.0-beta20.jar
 
 The jar file will run standalone, so just copy it where ever you need it.  Its recommended to customize and copy config.json to the working directory.  The default mongo connection is localhost:27017/test.
 
@@ -37,9 +37,9 @@ Prerequisites:
 To enable and configure git blame support:
 
 *  Supply a local clone of the git repository in the `git.repo` option
-*  Supply `backtrace.interesting.filter`, a list of regular expressions specifying lines to 
+*  Supply `backtrace.interesting.filter`, a list of regular expressions specifying lines to
    include when traversing down the stack to find who to blame (match at least one)
-*  Optionally supply `backtrace.interesting.filterNot`, a list of regular expressions specifying lines to 
+*  Optionally supply `backtrace.interesting.filterNot`, a list of regular expressions specifying lines to
    exclude when traversing down the stack to find who to blame (must match none)
 *  Optionally supply `email.drop.excs`.  If a notice contains any of these exceptions, an email will not be sent.
 
@@ -49,31 +49,31 @@ Example Message
 
     {
       "bt": [
-        "com.foursquare.lib.SoftError$.error (SoftError.scala:18)", 
-        "com.foursquare.api2.endpoints.Endpoint.handle (Endpoint.scala:45)", 
-        "com.foursquare.api2.RestAPIV2$$anon$1$$anonfun$apply$1.apply (RestAPIV2.scala:69)", 
-        "com.foursquare.api2.RestAPIV2$$anon$1$$anonfun$apply$1.apply (RestAPIV2.scala:65)", 
-        "net.liftweb.http.LiftServlet$$anonfun$1$$anonfun$apply$mcZ$sp$1.apply (LiftServlet.scala:260)", 
-        "net.liftweb.http.LiftServlet$$anonfun$1$$anonfun$apply$mcZ$sp$1.apply (LiftServlet.scala:260)", 
-        "net.liftweb.common.Full.map (Box.scala:491)", 
-        "net.liftweb.http.LiftServlet$$anonfun$1.apply$mcZ$sp (LiftServlet.scala:260)", 
+        "com.foursquare.lib.SoftError$.error (SoftError.scala:18)",
+        "com.foursquare.api2.endpoints.Endpoint.handle (Endpoint.scala:45)",
+        "com.foursquare.api2.RestAPIV2$$anon$1$$anonfun$apply$1.apply (RestAPIV2.scala:69)",
+        "com.foursquare.api2.RestAPIV2$$anon$1$$anonfun$apply$1.apply (RestAPIV2.scala:65)",
+        "net.liftweb.http.LiftServlet$$anonfun$1$$anonfun$apply$mcZ$sp$1.apply (LiftServlet.scala:260)",
+        "net.liftweb.http.LiftServlet$$anonfun$1$$anonfun$apply$mcZ$sp$1.apply (LiftServlet.scala:260)",
+        "net.liftweb.common.Full.map (Box.scala:491)",
+        "net.liftweb.http.LiftServlet$$anonfun$1.apply$mcZ$sp (LiftServlet.scala:260)",
         ":------------------------------- SNIP -------------------------------"
-      ], 
+      ],
       "env": {
-        "cmd": "/data/loko/foursquare.web-api-jetty-r010837p1/bin/java -server -cp /data/loko/foursquare.web-api-jetty-r010837p1/webapp/ StartJetty", 
-        "mode": "Staging", 
+        "cmd": "/data/loko/foursquare.web-api-jetty-r010837p1/bin/java -server -cp /data/loko/foursquare.web-api-jetty-r010837p1/webapp/ StartJetty",
+        "mode": "Staging",
         "pid": "4165"
-      }, 
+      },
       "excs": [
         "com.foursquare.lib.SoftException"
-      ], 
-      "h": "dev-10.prod.foursquare.com", 
+      ],
+      "h": "dev-10.prod.foursquare.com",
       "msgs": [
         "com.foursquare.lib.SoftException: Indexing error: Query does not match an index! query: db.tiplists.find"
-      ], 
+      ],
       "sess": {
-        "domain": "general", 
+        "domain": "general",
         "url": "soft error"
-      }, 
+      },
       "v": "r010837"
     }
