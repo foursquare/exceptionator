@@ -10,7 +10,7 @@ import org.bson.types.ObjectId
 import net.liftweb.json._
 import org.joda.time.DateTime
 import scalaj.collection.Imports._
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.ConcurrentHashMap
 import java.util.regex.Pattern

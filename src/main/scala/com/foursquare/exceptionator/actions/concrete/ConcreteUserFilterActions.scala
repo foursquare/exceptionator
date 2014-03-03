@@ -6,7 +6,7 @@ import com.foursquare.exceptionator.actions.{UserFilterActions, IndexActions}
 import com.foursquare.exceptionator.model.io.UserFilterView
 import com.foursquare.exceptionator.model.UserFilterRecord
 import com.foursquare.exceptionator.util.{ConcreteBlamer, Logger, ConcreteMailSender, Config, IncomingFilter, PollingCache}
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import net.liftweb.json._
 import net.liftweb.common.{Failure, Full}
 import org.bson.types.ObjectId

@@ -16,10 +16,10 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "com.cloudphysics"        %% "jerkson"              % "0.6.3" withSources(),
-  "com.foursquare"          %% "rogue-field"          % "2.2.0" intransitive(),
-  "com.foursquare"          %% "rogue-core"           % "2.2.0" intransitive(),
-  "com.foursquare"          %% "rogue-lift"           % "2.2.0" intransitive(),
-  "com.foursquare"          %% "rogue-index"          % "2.2.0" intransitive(),
+  "com.foursquare"          %% "rogue-field"          % "2.2.1" intransitive(),
+  "com.foursquare"          %% "rogue-core"           % "3.0.0-beta4" intransitive(),
+  "com.foursquare"          %% "rogue-lift"           % "3.0.0-beta4" intransitive(),
+  "com.foursquare"          %% "rogue-index"          % "3.0.0-beta4" intransitive(),
   "net.liftweb"             %% "lift-mongodb-record"  % "2.5.1",
   "com.googlecode.concurrentlinkedhashmap" % "concurrentlinkedhashmap-lru" % "1.2",
   "com.novocode"            %  "junit-interface"      % "0.6"       % "test",

@@ -11,7 +11,7 @@ import org.bson.types.ObjectId
 import org.joda.time.{DateTime, DateTimeZone}
 import com.foursquare.rogue._
 import com.foursquare.index.{Asc, IndexedRecord}
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import java.util.Date
 
 
@@ -48,5 +48,5 @@ object NoticeRecord extends NoticeRecord with MongoMetaRecord[NoticeRecord] with
     val rec = createRecord.notice(incoming)
     incoming.d.foreach(epoch => rec._id(new ObjectId(new Date(epoch))))
     rec
-  } 
+  }
 }

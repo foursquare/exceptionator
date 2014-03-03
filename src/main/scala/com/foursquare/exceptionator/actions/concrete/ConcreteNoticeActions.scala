@@ -8,7 +8,7 @@ import com.foursquare.exceptionator.model.{NoticeRecord, MongoOutgoing}
 import net.liftweb.json._
 import org.bson.types.ObjectId
 import scalaj.collection.Imports._
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import com.twitter.ostrich.stats.Stats
 
 import com.foursquare.exceptionator.util.{Config, Logger}

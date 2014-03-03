@@ -8,7 +8,7 @@ import com.foursquare.exceptionator.model.io.{BacktraceLine, BucketId, Incoming}
 import com.foursquare.exceptionator.filter.ProcessedIncoming
 import com.foursquare.exceptionator.filter.concrete.FreshBucketFilter
 import com.foursquare.exceptionator.util.{PollingCache}
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import com.twitter.util.{Future, FuturePool}
 import java.util.concurrent.Executors
 import org.joda.time.DateTime

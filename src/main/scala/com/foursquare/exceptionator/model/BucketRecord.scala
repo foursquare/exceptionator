@@ -11,12 +11,12 @@ import org.bson.types.ObjectId
 import org.joda.time.DateTime
 import com.foursquare.rogue._
 import com.foursquare.index.{Asc, IndexedRecord}
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 
 
 class BucketRecord extends MongoRecord[BucketRecord] {
   def meta = BucketRecord
-  override def id = this._id.value  
+  override def id = this._id.value
 
   object _id extends StringField(this, 255) // name:key
 
@@ -64,7 +64,7 @@ object HistogramType extends Enumeration {
 
 class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
   def meta = BucketRecordHistogram
-  override def id = this._id.value  
+  override def id = this._id.value
 
   object _id extends StringField(this, 255) // timePrefix:name:key
 
@@ -112,7 +112,7 @@ class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
 }
 
 object BucketRecordHistogram
-    extends BucketRecordHistogram 
+    extends BucketRecordHistogram
     with MongoMetaRecord[BucketRecordHistogram]
     with IndexedRecord[BucketRecordHistogram] {
   override def collectionName = "bucket_histograms"

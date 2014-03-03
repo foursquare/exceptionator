@@ -11,11 +11,11 @@ import org.bson.types.ObjectId
 import org.joda.time.{DateTime, DateTimeZone}
 import com.foursquare.rogue._
 import com.foursquare.index.{Asc, IndexedRecord}
-import com.foursquare.rogue.LiftRogue._
+import com.foursquare.rogue.lift.LiftRogue._
 import java.util.Date
 
 
-// TODO(johng) make a bucket for the filter to keep track of rate? 
+// TODO(johng) make a bucket for the filter to keep track of rate?
 // A bit hard because we have to loop back and add it.
 
 object TriggerType extends Enumeration {
@@ -104,7 +104,7 @@ class UserFilterRecord extends MongoRecord[UserFilterRecord] with MongoId[UserFi
   def doc = asJValue
 }
 
-object UserFilterRecord 
+object UserFilterRecord
   extends UserFilterRecord
   with MongoMetaRecord[UserFilterRecord]
   with IndexedRecord[UserFilterRecord] {
