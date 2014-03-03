@@ -3,6 +3,8 @@ Exceptionator
 
 An exception aggregator using mongodb.
 
+![Exceptionator screenshot](http://cl.ly/image/1I2c2H0W1N3V/exceptionator-screenshot.png)
+
 Usage
 -----
 
