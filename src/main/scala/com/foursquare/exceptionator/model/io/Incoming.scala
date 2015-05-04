@@ -19,8 +19,9 @@ case class BacktraceLine(method: String, fileName: String, number:Int) {
 
 case class Incoming (
   msgs: List[String], // messages
-  excs: List[String], // exception classes 
+  excs: List[String], // exception classes
   bt: List[String], // exception stack
+  btHash: Option[String], // exception stack (joined with newlines) md5 hash
   sess: Map[String, String], // session
   env: Map[String, String], // environment
   h: String, // host
@@ -30,10 +31,10 @@ case class Incoming (
   tags: Option[List[String]]
 ) {
   def structuredBacktrace: List[List[BacktraceLine]] = bt.map(_.split("\n").map(BacktraceLine(_)).toList)
-  
+
   // TODO: replace these with something more modular
   def flatBacktrace = bt.flatMap(_.split("\n").toList)
-  def firstInteresting: Option[BacktraceLine] = 
+  def firstInteresting: Option[BacktraceLine] =
     flatBacktrace.find(l => isInteresting(l)).map(l => BacktraceLine(l))
   def firstNInteresting(n: Int): List[BacktraceLine] =
     flatBacktrace.filter(l => isInteresting(l)).slice(0,n).map(l => BacktraceLine(l))

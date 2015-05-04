@@ -40,7 +40,7 @@ class IncomingHttpService(incomingActions: IncomingActions, backgroundActions: B
               response.contentString = res.mkString(",")
               response
             })
-          case _ => 
+          case _ =>
             ServiceUtil.errorResponse(HttpResponseStatus.NOT_FOUND)
         }
 
@@ -49,7 +49,7 @@ class IncomingHttpService(incomingActions: IncomingActions, backgroundActions: B
     }
   }
 
-  def process(incoming: Incoming) = { 
+  def process(incoming: Incoming) = {
     incomingLog.foreach(log => {
       log.write(generate(incoming))
       log.write("\n")

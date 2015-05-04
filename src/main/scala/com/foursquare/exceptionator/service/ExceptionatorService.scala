@@ -4,11 +4,13 @@ package com.foursquare.exceptionator.service
 
 import com.codahale.jerkson.Json.{parse, stream}
 import com.foursquare.exceptionator.actions.IndexActions
-import com.foursquare.exceptionator.actions.{HasNoticeActions, HasBucketActions, HasUserFilterActions}
+import com.foursquare.exceptionator.actions.{HasBucketActions, HasExceptionActions, HasHistoryActions,
+    HasNoticeActions, HasUserFilterActions}
 import com.foursquare.exceptionator.loader.service.HasPluginLoaderService
 import com.foursquare.exceptionator.loader.concrete.ConcretePluginLoaderService
 import com.foursquare.exceptionator.actions.concrete.{ConcreteBackgroundActions, ConcreteBucketActions,
-  ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions, FilteredConcreteIncomingActions}
+    ConcreteExceptionActions, ConcreteHistoryActions, ConcreteIncomingActions, ConcreteNoticeActions,
+    ConcreteUserFilterActions, FilteredConcreteIncomingActions}
 import com.foursquare.exceptionator.util.{Config, Logger, ConcreteMailSender, ConcreteBlamer}
 import com.mongodb.{MongoClient, DBAddress, MongoException, MongoClientOptions, ServerAddress}
 import com.twitter.finagle.builder.{ServerBuilder, Server}
@@ -134,11 +136,15 @@ object ExceptionatorServer extends Logger {
     Config.defaultInit()
 
     val services = new HasBucketActions
+        with HasExceptionActions
+        with HasHistoryActions
         with HasNoticeActions
         with HasUserFilterActions
         with HasPluginLoaderService {
-      lazy val noticeActions = new ConcreteNoticeActions
       lazy val bucketActions = new ConcreteBucketActions
+      lazy val exceptionActions = new ConcreteExceptionActions
+      lazy val historyActions = new ConcreteHistoryActions
+      lazy val noticeActions = new ConcreteNoticeActions
       lazy val userFilterActions = new ConcreteUserFilterActions
       lazy val pluginLoader = new ConcretePluginLoaderService(this)
     }
@@ -149,7 +155,12 @@ object ExceptionatorServer extends Logger {
 
     // Start mongo
     try {
-      bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
+      bootMongo(List(
+        services.bucketActions,
+        services.exceptionActions,
+        services.historyActions,
+        services.noticeActions,
+        services.userFilterActions))
     } catch {
       case e: IOException => {
         logger.error(e, "Failed to connect to mongo")
