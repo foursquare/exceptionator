@@ -29,18 +29,12 @@ class ConcreteNoticeActions extends NoticeActions with IndexActions with Logger 
     })
   }
 
-  def save(
-      incoming: Incoming,
-      tags: Set[String],
-      keywords: Set[String],
-      buckets: Set[BucketId]): ObjectId = {
-
-    val nr = NoticeRecord.createRecordFrom(incoming)
+  def save(incoming: Incoming, tags: Set[String], keywords: Set[String], buckets: Set[BucketId]): NoticeRecord = {
+    NoticeRecord.createRecordFrom(incoming)
       .keywords(keywords.toList)
       .tags(tags.toList)
       .buckets(buckets.toList.map(_.toString))
       .save
-    nr._id.value
   }
 
   def addBucket(id: ObjectId, bucketId: BucketId) {

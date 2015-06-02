@@ -35,7 +35,7 @@ if __name__ == '__main__':
   if len(args) != 2:
     print parser.print_usage()
     sys.exit(1)
-  
+
   connection = httplib.HTTPConnection('localhost:8080')
 
   sleep = 0
@@ -61,7 +61,7 @@ if __name__ == '__main__':
   try:
     fh = open(args[1])
     i = 0
-    
+
     for l in fh:
       i += 1
       if i < skip:
@@ -85,14 +85,16 @@ if __name__ == '__main__':
           buf.append(l)
 
       else:
-        buf.append(l)
+        o = json.loads(l)
+        o['id'] = i
+        buf.append(json.dumps(o))
 
       if (i % every) == 0:
         if options.multi:
           notice = '[%s]' % ','.join(buf)
         else:
           notice = buf[0]
-        times.append(post(connection, notice, options.multi)) 
+        times.append(post(connection, notice, options.multi))
         buf = []
 
   except KeyboardInterrupt:

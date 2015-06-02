@@ -4,11 +4,13 @@ package com.foursquare.exceptionator.service
 
 import com.codahale.jerkson.Json.{parse, stream}
 import com.foursquare.exceptionator.actions.IndexActions
-import com.foursquare.exceptionator.actions.{HasNoticeActions, HasBucketActions, HasUserFilterActions}
+import com.foursquare.exceptionator.actions.{HasBucketActions, HasHistoryActions, HasNoticeActions,
+    HasUserFilterActions}
 import com.foursquare.exceptionator.loader.service.HasPluginLoaderService
 import com.foursquare.exceptionator.loader.concrete.ConcretePluginLoaderService
 import com.foursquare.exceptionator.actions.concrete.{ConcreteBackgroundActions, ConcreteBucketActions,
-  ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions, FilteredConcreteIncomingActions}
+    ConcreteHistoryActions, ConcreteIncomingActions, ConcreteNoticeActions, ConcreteUserFilterActions,
+    FilteredConcreteIncomingActions}
 import com.foursquare.exceptionator.util.{Config, Logger, ConcreteMailSender, ConcreteBlamer}
 import com.mongodb.{MongoClient, DBAddress, MongoException, MongoClientOptions, ServerAddress}
 import com.twitter.finagle.builder.{ServerBuilder, Server}
@@ -134,13 +136,15 @@ object ExceptionatorServer extends Logger {
     Config.defaultInit()
 
     val services = new HasBucketActions
+        with HasHistoryActions
         with HasNoticeActions
-        with HasUserFilterActions
-        with HasPluginLoaderService {
-      lazy val noticeActions = new ConcreteNoticeActions
+        with HasPluginLoaderService
+        with HasUserFilterActions {
       lazy val bucketActions = new ConcreteBucketActions
-      lazy val userFilterActions = new ConcreteUserFilterActions
+      lazy val historyActions = new ConcreteHistoryActions
+      lazy val noticeActions = new ConcreteNoticeActions
       lazy val pluginLoader = new ConcretePluginLoaderService(this)
+      lazy val userFilterActions = new ConcreteUserFilterActions
     }
 
     // Create services
