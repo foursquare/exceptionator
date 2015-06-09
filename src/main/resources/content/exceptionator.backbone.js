@@ -9,6 +9,7 @@ Exceptionator.GraphSpans = {
 Exceptionator.ListTypes = {
   BUCKET_KEY: 'bucket_key',
   BUCKET_GROUP: 'bucket_group',
+  HISTORY: 'history',
   SEARCH: 'search'
 }
 
@@ -87,7 +88,8 @@ Exceptionator.Notice = Backbone.Model.extend({
       this.get('bt')[index] = backtrace.split('\n');
     }, this);
   },
-  histogram: function(bucket) {
+
+  histogram: function(histogramMap) {
     var fieldName;
     if (Exceptionator.GraphSpan == Exceptionator.GraphSpans.LAST_HOUR) {
       fieldName = 'h';
@@ -98,18 +100,17 @@ Exceptionator.Notice = Backbone.Model.extend({
     if (Exceptionator.GraphSpan == Exceptionator.GraphSpans.LAST_MONTH) {
       fieldName = 'm';
     }
-    return this.get('bkts')[bucket]['h'][fieldName];
+    return histogramMap[fieldName];
   }
 },{
 
-  emptyHistogram: function() {
-    var dateNow = new Date()
-    var stop = dateNow.getTime();
-    stop -= dateNow.getUTCMilliseconds();
-    stop -= dateNow.getUTCSeconds() * 1000;
+  emptyHistogram: function(endDate) {
+    var stop = endDate.getTime();
+    stop -= endDate.getUTCMilliseconds();
+    stop -= endDate.getUTCSeconds() * 1000;
 
-    dateNow.setMilliseconds(0)
-    dateNow.setSeconds(0);
+    endDate.setMilliseconds(0)
+    endDate.setSeconds(0);
 
     var step;
     var nSteps;
@@ -118,13 +119,13 @@ Exceptionator.Notice = Backbone.Model.extend({
       nSteps = 60;
     }
     if (Exceptionator.GraphSpan == Exceptionator.GraphSpans.LAST_DAY) {
-      stop -= dateNow.getUTCMinutes() * 60 * 1000;
+      stop -= endDate.getUTCMinutes() * 60 * 1000;
       step = 60 * 60 * 1000;
       nSteps = 24;
     }
     if (Exceptionator.GraphSpan == Exceptionator.GraphSpans.LAST_MONTH) {
-      stop -= dateNow.getUTCMinutes() * 60 * 1000;
-      stop -= dateNow.getUTCHours() * 60 * 60 * 1000;
+      stop -= endDate.getUTCMinutes() * 60 * 1000;
+      stop -= endDate.getUTCHours() * 60 * 60 * 1000;
       step = 24 * 60 * 60 * 1000;
       nSteps = 30;
     }
@@ -171,7 +172,14 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
   model: Exceptionator.Notice,
 
   initialize: function(models, options) {
-    if (options.bucketName && options.bucketKey) {
+    if (options.timestamp) {
+      this.listType = Exceptionator.ListTypes.HISTORY;
+      this.timestamp = Number(options.timestamp);
+      this.timeOffset = Date.now() - this.timestamp;
+      this.id = 'history_' + this.timestamp;
+      this.title = 'history: ' + this.timestamp;
+
+    } else if (options.bucketName && options.bucketKey) {
       this.listType = Exceptionator.ListTypes.BUCKET_KEY;
       this.bucketKey = options.bucketKey;
       this.bucketName = options.bucketName;
@@ -183,6 +191,7 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
         this.title = this.bucketName;
       }
       this.title += ': ' + this.bucketKey;
+
     } else if (options.bucketName) {
       this.listType = Exceptionator.ListTypes.BUCKET_GROUP;
       this.bucketName = options.bucketName;
@@ -193,6 +202,7 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
       } else {
         this.title = this.bucketName;
       }
+
     } else {
       this.query = options.query;
       this.listType = Exceptionator.ListTypes.SEARCH;
@@ -203,7 +213,11 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
   },
 
   url: function() {
-    return this.urlPart + 'limit=' + encodeURIComponent(Exceptionator.Limit);
+    if (this.listType == Exceptionator.ListTypes.HISTORY) {
+      return '/api/history/' + (Date.now()-this.timeOffset) + '?limit=' + encodeURIComponent(Exceptionator.Limit);
+    } else {
+      return this.urlPart + 'limit=' + encodeURIComponent(Exceptionator.Limit);
+    }
   },
 
   timeReverseSorted: function() {
@@ -211,19 +225,22 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
   },
 
   histograms: function() {
-    var empty = Exceptionator.Notice.emptyHistogram();
+    var empty = Exceptionator.Notice.emptyHistogram(new Date());
     var seriesList = [];
-    if (this.listType == Exceptionator.ListTypes.BUCKET_KEY) {
-      var mostRecent =  this.min(Exceptionator.NoticeList.reverseTimeIterator_);
-      if (mostRecent) {
-        seriesList = [{label: '', values: mostRecent.histogram(this.bucketName)}];
-      }
-    }
 
-    if (this.listType == Exceptionator.ListTypes.BUCKET_GROUP) {
+    if (this.listType == Exceptionator.ListTypes.BUCKET_KEY) {
+      var mostRecent = this.min(Exceptionator.NoticeList.reverseTimeIterator_);
+      if (mostRecent) {
+        seriesList = [{label: '', values: mostRecent.histogram(mostRecent.get('bkts')[this.bucketName]['h'])}];
+      }
+    } else if (this.listType == Exceptionator.ListTypes.BUCKET_GROUP) {
       seriesList = _.map(this.timeReverseSorted(), function(model) {
-        return {label: model.get('bkts')[this.bucketName]['k'], values: model.histogram(this.bucketName)};
+        return {label: model.get('bkts')[this.bucketName]['k'], values: model.histogram(model.get('bkts')[this.bucketName]['h'])};
       }, this);
+    } else if (this.listType == Exceptionator.ListTypes.HISTORY) {
+      empty = Exceptionator.Notice.emptyHistogram(new Date(Date.now() - this.timeOffset));
+      var mostRecent = this.min(Exceptionator.NoticeList.reverseTimeIterator_);
+      var seriesList = [{label: '', values: mostRecent.histogram(mostRecent.get('hist'))}];
     }
 
     var retval = [];
@@ -671,7 +688,8 @@ Exceptionator.Routing = Backbone.Router.extend({
     "notices/:bucketName":            "bucketGroup",
     "filters":                        "filters",
     "filters/":                       "filters",
-    "filters/:filterId":              "filters"
+    "filters/:filterId":              "filters",
+    "history/:timestamp":             "history"
   },
 
   route_: function(listDefs) {
@@ -724,5 +742,9 @@ Exceptionator.Routing = Backbone.Router.extend({
 
   bucketGroup: function(bucketName) {
     this.route_([{list: {bucketName: decodeURIComponent(bucketName)}}]);
+  },
+
+  history: function(timestamp) {
+    this.route_([{list: {timestamp: timestamp}}])
   }
 });

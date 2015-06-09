@@ -3,7 +3,8 @@
 package com.foursquare.exceptionator.service
 
 import com.codahale.jerkson.Json.{generate, parse}
-import com.foursquare.exceptionator.actions.{HasBucketActions, HasNoticeActions, HasUserFilterActions}
+import com.foursquare.exceptionator.actions.{HasBucketActions, HasHistoryActions, HasNoticeActions,
+    HasUserFilterActions}
 import com.foursquare.exceptionator.model.io.{Incoming, Outgoing, UserFilterView}
 import com.foursquare.exceptionator.util.{Config, Logger}
 import com.twitter.finagle.http.{Response, Request}
@@ -20,6 +21,7 @@ import scalaj.collection.Imports._
 object ApiHttpService {
    val Notices = """/api/notices(?:/([^/]+)(?:/([^/?&=]+))?)?""".r
    val Filters = """/api/filters(?:/([^/]+))?""".r
+   val History = """/api/history(?:/(\d+))?""".r
 }
 
 object InternalResponse {
@@ -51,7 +53,7 @@ case class InternalResponse(content: String, status: HttpResponseStatus) {
 }
 
 class ApiHttpService(
-  services: HasNoticeActions with HasBucketActions with HasUserFilterActions,
+  services: HasBucketActions with HasHistoryActions with HasNoticeActions with HasUserFilterActions,
   bucketFriendlyNames: Map[String, String]) extends Service[ExceptionatorRequest, Response] with Logger {
 
   val apiFuturePool = FuturePool(Executors.newFixedThreadPool(10))
@@ -72,6 +74,7 @@ class ApiHttpService(
         }
       case ApiHttpService.Notices(name, key) =>
         notices(Option(name).map(decodeURIComponent(_)), Option(key).map(decodeURIComponent), request)
+      case ApiHttpService.History(timestamp) => history(timestamp.toLong, request)
       case "/api/search" =>
         search(decodeURIComponent(request.getParam("q")).toLowerCase, request)
       case _ =>
@@ -85,7 +88,7 @@ class ApiHttpService(
     URLDecoder.decode(component.replace("+", "%2B"), "UTF-8")
   }
 
-  def limitParam(request: Request) = request.getIntParam("limit", 20)
+  def limitParam(request: Request): Int = request.getIntParam("limit", 20)
 
   def bucketNotices(bucketName: String, bucketKey: String, request: Request): Future[InternalResponse] = {
     InternalResponse(apiFuturePool({
@@ -168,5 +171,11 @@ class ApiHttpService(
       Config.opt(_.getInt("http.port")).map("apiPort" -> _).toMap ++
       Config.opt(_.getString("http.hostname")).map("apiHost" -> _).toMap
     InternalResponse(generate(values))
+  }
+
+  def history(timestamp: Long, request: ExceptionatorRequest): Future[InternalResponse] = {
+    InternalResponse(apiFuturePool({
+      Outgoing.compact(services.historyActions.get(new DateTime(timestamp), limitParam(request)))
+    }))
   }
 }

@@ -42,7 +42,8 @@
 
   "history": {
     "flushPeriod": 60,
-    "sampleRate": 200
+    "sampleRate": 200,
+    "sampleWindowSeconds": 15
   },
 
   "rollingRank": {

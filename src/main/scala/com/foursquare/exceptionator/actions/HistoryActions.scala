@@ -3,7 +3,8 @@
 package com.foursquare.exceptionator.actions
 
 import com.foursquare.exceptionator.model.NoticeRecord
-import java.util.Date
+import com.foursquare.exceptionator.model.io.Outgoing
+import org.joda.time.DateTime
 
 
 trait HasHistoryActions {
@@ -11,5 +12,6 @@ trait HasHistoryActions {
 }
 
 trait HistoryActions extends IndexActions {
-  def save(notice: NoticeRecord): Date
+  def get(time: DateTime, limit: Int): List[Outgoing]
+  def save(notice: NoticeRecord): DateTime
 }

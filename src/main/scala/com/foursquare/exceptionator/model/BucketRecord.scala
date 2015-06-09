@@ -57,9 +57,19 @@ object BucketRecord extends BucketRecord with MongoMetaRecord[BucketRecord] with
     BucketRecord.index(_.lastSeen, Asc)) // finding old buckets
 }
 
-object HistogramType extends Enumeration {
-  type HistogramType = Value
-  val Month, Day, Hour = Value
+object HistogramType {
+  sealed trait HistogramType {
+    def step: Int
+  }
+  case object Hour extends HistogramType {
+    def step: Int = 60 * 1000
+  }
+  case object Day extends HistogramType {
+    def step: Int = 60 * 60 * 1000
+  }
+  case object Month extends HistogramType {
+    def step: Int = 24 * 60 * 60 * 1000
+  }
 }
 
 class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
@@ -102,12 +112,7 @@ class BucketRecordHistogram extends MongoRecord[BucketRecordHistogram] {
 
   def toEpochMap(now: DateTime): Map[String, Int] = {
     val start = startTime(now).getMillis
-    val step = histogramType match {
-      case HistogramType.Hour =>  60 * 1000
-      case HistogramType.Day =>   60 * 60 * 1000
-      case HistogramType.Month => 24 * 60 * 60 * 1000
-    }
-    histogram.value.map{ case (k, v) => (start + Hash.fieldNameDecode(k) * step).toString -> v }.toMap
+    histogram.value.map{ case (k, v) => (start + Hash.fieldNameDecode(k) * histogramType.step).toString -> v }.toMap
   }
 }
 

@@ -18,7 +18,8 @@ import java.util.Date
 class NoticeRecord extends MongoRecord[NoticeRecord] with MongoId[NoticeRecord] {
   def meta = NoticeRecord
 
-  def createTime = new DateTime(id.getTime(), DateTimeZone.UTC).toDate
+  def createDateTime = new DateTime(id.getTime(), DateTimeZone.UTC)
+  def createTime = createDateTime.toDate
 
   object notice extends MongoCaseClassField[NoticeRecord, Incoming](this) {
     override def name = "n"

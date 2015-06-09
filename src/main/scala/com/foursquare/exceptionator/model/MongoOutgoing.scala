@@ -2,10 +2,12 @@
 package com.foursquare.exceptionator.model
 
 import com.foursquare.exceptionator.model.io.{BucketId, Outgoing}
+import com.foursquare.rogue.lift.LiftRogue._
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
 import org.bson.types.ObjectId
 import org.joda.time.DateTime
+
 
 object MongoOutgoing {
   def apply(nr: NoticeRecord): MongoOutgoing = {
@@ -46,5 +48,34 @@ case class MongoOutgoing(id: ObjectId, doc: JValue) extends Outgoing {
           ("m" -> histoMaps.get(HistogramType.Month))))
     })
     MongoOutgoing(id, JObject(List(JField("bkts", JObject(bucketInfo)))) merge doc)
+  }
+
+  def addHistorygrams(): Outgoing = {
+    val time = new DateTime(id.getTime)
+    val allData = HistoryRecord.where(_.id between (time.minusMonths(1), time))
+      .orderDesc(_.id)
+      .select(_.id, _.totalSampled)
+      .fetch()
+      .map({ case (d, v) => (new DateTime(d), v) })
+
+    val monthMap = allData
+      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Month.step).toString })
+      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
+    val dayMap = allData
+      .filter({ case (d, v) => d.isAfter(time.minusDays(1)) })
+      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Day.step).toString })
+      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
+    val hourMap = allData
+      .filter({ case (d, v) => d.isAfter(time.minusHours(1)) })
+      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Hour.step).toString })
+      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
+
+    val updated = JObject(List(JField("hist",
+      ("h" -> hourMap) ~
+      ("d" -> dayMap) ~
+      ("m" -> monthMap)
+    ))) merge doc
+
+    MongoOutgoing(id, updated)
   }
 }
