@@ -269,22 +269,30 @@ Exceptionator.NoticeListView = Backbone.View.extend({
 
   events: {
     "click .exc_header": "toggleBody",
-    "click .bucketLink": "handleLinkClick"
+    "click .bucketLink": "handleLinkClick",
+    "plotclick": "handlePlotClick"
   },
 
   toggleBody: function(e) {
     $(e.target).parents('.exc').toggleClass('exc_hidden');
   },
 
-  handleLinkClick: function(e) {
+  handleClick: function(e, url) {
     // neat trick from http://dev.tenfarms.com/posts/proper-link-handling
     if (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
       e.preventDefault();
-      var url = $(e.target).attr("href").replace(/^\//, "");
       Exceptionator.Router.navigate(url, { trigger: true });
     } else {
       e.stopPropagation();
     }
+  },
+
+  handleLinkClick: function(e) {
+    this.handleClick(e, $(e.target).attr("href").replace(/^\//, ""));
+  },
+
+  handlePlotClick: function (e, pos, item) {
+    this.handleClick(e, "/history/" + Math.floor(pos.x));
   },
 
   getTitleEl: function() {
@@ -381,7 +389,8 @@ Exceptionator.NoticeListView = Backbone.View.extend({
       var options = {
         lines: { show: true },
         legend: { position: "nw" },
-        xaxis: { mode: "time", timezone: "browser" }
+        xaxis: { mode: "time", timezone: "browser" },
+        grid: { clickable: true }
       };
       var histograms = _.first(this.collection.histograms(), Exceptionator.NoticeListView.MAX_GRAPH_LINES);
 
