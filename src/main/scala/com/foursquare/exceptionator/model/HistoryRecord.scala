@@ -10,7 +10,7 @@ import com.foursquare.rogue.lift.LiftRogue._
 import com.mongodb.{BasicDBList, DBObject}
 import net.liftweb.common.{Box, Full}
 import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord}
-import net.liftweb.mongodb.record.field.{DateField, MongoListField}
+import net.liftweb.mongodb.record.field.{BsonRecordListField, DateField}
 import net.liftweb.record.field._
 import org.joda.time.DateTime
 
@@ -25,24 +25,8 @@ class HistoryRecord extends MongoRecord[HistoryRecord] {
     def dateTimeValue: DateTime = new DateTime(value)
   }
 
-  // TODO(jacob): must subclass this before it will work, see http://liftweb.net/api/26/api/index.html#net.liftweb.mongodb.record.field.MongoListField
-  object notices extends MongoListField[HistoryRecord, NoticeRecord](this) {
+  object notices extends BsonRecordListField[HistoryRecord, NoticeRecord](this, NoticeRecord) {
     override def name = "n"
-
-    override def asDBObject: DBObject = this.synchronized {
-      val dbl = new BasicDBList
-      value.foreach(v => dbl.add(v.asDBObject))
-      dbl
-    }
-
-    override def setFromDBObject(dbo: DBObject): Box[MyType] = {
-      setBox(Full(dbo match {
-        case list: BasicDBList => {
-          (for (i <- 0 to list.size-1) yield (NoticeRecord.fromDBObject(list.get(i).asInstanceOf[DBObject]))).toList
-        }
-        case _ => Nil
-      }))
-    }
   }
 
   object sampleRate extends IntField(this) {
