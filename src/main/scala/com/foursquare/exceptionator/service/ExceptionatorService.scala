@@ -153,7 +153,11 @@ object ExceptionatorServer extends Logger {
 
     // Start mongo
     try {
-      bootMongo(List(services.noticeActions, services.bucketActions, services.userFilterActions))
+      bootMongo(List(
+        services.bucketActions,
+        services.historyActions,
+        services.noticeActions,
+        services.userFilterActions))
     } catch {
       case e: IOException => {
         logger.error(e, "Failed to connect to mongo")
