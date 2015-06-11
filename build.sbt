@@ -6,7 +6,7 @@ version := "3.0-beta0"
 
 scalaVersion := "2.10.5"
 
-scalacOptions += "-deprecation"
+scalacOptions ++= Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
 resolvers ++= Seq(
   "repo.codahale.com" at "http://repo.codahale.com",
