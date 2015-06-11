@@ -3,8 +3,8 @@
 package com.foursquare.exceptionator.model
 
 import com.foursquare.exceptionator.model.io.Incoming
-import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord, MongoId}
-import net.liftweb.mongodb.record.field.{BsonRecordListField, MongoCaseClassField, MongoListField}
+import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord}
+import net.liftweb.mongodb.record.field.{BsonRecordListField, MongoCaseClassField, MongoListField, ObjectIdPk}
 import net.liftweb.record.field._
 import net.liftweb.json._
 import org.bson.types.ObjectId
@@ -15,10 +15,10 @@ import com.foursquare.rogue.lift.LiftRogue._
 import java.util.Date
 
 
-class NoticeRecord extends MongoRecord[NoticeRecord] with MongoId[NoticeRecord] {
+class NoticeRecord extends MongoRecord[NoticeRecord] with ObjectIdPk[NoticeRecord] {
   def meta = NoticeRecord
 
-  def createDateTime = new DateTime(id.getTime(), DateTimeZone.UTC)
+  def createDateTime = new DateTime(id.value.getTime(), DateTimeZone.UTC)
   def createTime = createDateTime.toDate
 
   object notice extends MongoCaseClassField[NoticeRecord, Incoming](this) {
@@ -42,12 +42,12 @@ object NoticeRecord extends NoticeRecord with MongoMetaRecord[NoticeRecord] with
   override def collectionName = "notices"
 
   override val mongoIndexList = List(
-    NoticeRecord.index(_._id, Asc),
+    NoticeRecord.index(_.id, Asc),
     NoticeRecord.index(_.keywords, Asc))
 
   def createRecordFrom(incoming: Incoming): NoticeRecord = {
     val rec = createRecord.notice(incoming)
-    incoming.d.foreach(epoch => rec._id(new ObjectId(new Date(epoch))))
+    incoming.d.foreach(epoch => rec.id(new ObjectId(new Date(epoch))))
     rec
   }
 }

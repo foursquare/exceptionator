@@ -73,7 +73,7 @@ class ConcreteIncomingActions(services: HasBucketActions with HasHistoryActions 
     val buckets = incoming.buckets
 
     val notice = services.noticeActions.save(incoming.incoming, tags, kw, buckets)
-    val incomingId = notice._id.value
+    val incomingId = notice.id.value
 
     val historyId = services.historyActions.save(notice)
 

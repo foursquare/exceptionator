@@ -15,11 +15,11 @@ import com.foursquare.exceptionator.util.{Config, Logger}
 
 class ConcreteNoticeActions extends NoticeActions with IndexActions with Logger {
   def get(ids: List[ObjectId]): List[Outgoing] = {
-    NoticeRecord.where(_._id in ids).fetch.map(MongoOutgoing(_))
+    NoticeRecord.where(_.id in ids).fetch.map(MongoOutgoing(_))
   }
 
   def search(keywords: List[String], limit: Option[Int]) = {
-    NoticeRecord.where(_.keywords all keywords).orderDesc(_._id).limitOpt(limit).fetch.map(MongoOutgoing(_))
+    NoticeRecord.where(_.keywords all keywords).orderDesc(_.id).limitOpt(limit).fetch.map(MongoOutgoing(_))
   }
 
   def ensureIndexes {
@@ -39,13 +39,13 @@ class ConcreteNoticeActions extends NoticeActions with IndexActions with Logger 
 
   def addBucket(id: ObjectId, bucketId: BucketId) {
     Stats.time("incomingActions.addBucket") {
-      NoticeRecord.where(_._id eqs id).modify(_.buckets push bucketId.toString).updateOne()
+      NoticeRecord.where(_.id eqs id).modify(_.buckets push bucketId.toString).updateOne()
     }
   }
 
   def removeBucket(id: ObjectId, bucketId: BucketId) {
     val result = Stats.time("noticeActions.removeBucket") {
-      NoticeRecord.where(_._id eqs id)
+      NoticeRecord.where(_.id eqs id)
       .select(_.buckets)
       .findAndModify(_.buckets pull bucketId.toString).updateOne(true)
     }

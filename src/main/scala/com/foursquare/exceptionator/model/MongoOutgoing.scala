@@ -14,7 +14,7 @@ object MongoOutgoing {
     val ast = nr.asJValue
     val merged = {
       (("id" -> nr.id.toString) ~
-      ("d" -> nr.id.getTime) ~
+      ("d" -> nr.id.value.getTime) ~
       ("kw" -> nr.keywords.value) ~
       ("tags" -> nr.tags.value) ~
       ("bkts" -> nr.buckets.value.map(id => {
@@ -22,7 +22,7 @@ object MongoOutgoing {
         bId.name -> Map("nm" -> bId.name, "k" -> bId.key)
       }).toMap)) merge (ast \ nr.notice.name)
     }
-    MongoOutgoing(nr.id, merged)
+    MongoOutgoing(nr.id.value, merged)
   }
 }
 

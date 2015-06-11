@@ -57,7 +57,7 @@ class ApplyUserFiltersBackgroundAction (
         processedIncoming.id.map(id => {
           // Update last matched time:
           mongoCmdFuturePool({
-            UserFilterRecord.where(_._id eqs f.id).modify(_.lastMatched setTo id.getTime).updateOne()
+            UserFilterRecord.where(_.id eqs f.id.value).modify(_.lastMatched setTo id.getTime).updateOne()
           })
 
           // update local cache (racy, but I think this is acceptable)
@@ -152,7 +152,7 @@ class ApplyUserFiltersBackgroundAction (
       logger.info("automated mute: %s until %s".format(filter.id.toString, new DateTime(until).toString()))
       filter.muteUntil(until)
       mongoCmdFuturePool({
-        UserFilterRecord.where(_._id eqs filter.id).modify(_.muteUntil setTo Some(until)).updateOne()
+        UserFilterRecord.where(_.id eqs filter.id.value).modify(_.muteUntil setTo Some(until)).updateOne()
       })
     }
   }

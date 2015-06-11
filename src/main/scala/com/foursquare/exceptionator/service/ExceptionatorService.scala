@@ -69,10 +69,10 @@ class StaticFileService(prefix: String) extends Service[ExceptionatorRequest, Re
       val response = Response(HttpVersion.HTTP_1_1, HttpResponseStatus.OK)
         response.setContent(ChannelBuffers.copiedBuffer(data))
         if (path.endsWith(".js")) {
-           response.setHeader("Content-Type", "application/x-javascript")
+          response.headerMap.add(HttpHeaders.Names.CONTENT_TYPE, "application/x-javascript")
         }
         if (path.endsWith(".css")) {
-           response.setHeader("Content-Type", "text/css")
+          response.headerMap.add(HttpHeaders.Names.CONTENT_TYPE, "text/css")
         }
         response
     })).getOrElse(ServiceUtil.errorResponse(HttpResponseStatus.NOT_FOUND))

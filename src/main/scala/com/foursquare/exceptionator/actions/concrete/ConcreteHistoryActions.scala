@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap
 import net.liftweb.json.{JField, JInt, JObject}
 import org.joda.time.DateTime
 import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
+import scala.language.postfixOps
 import scala.util.Random
 
 
@@ -55,14 +56,14 @@ class ConcreteHistoryActions extends HistoryActions with IndexActions with Logge
             val existingSampler = ReservoirSampler(existing.sampleRate.value, existingState)
             val merged = ReservoirSampler.merge(existingSampler, sampler)
             val state = merged.state
-            val sorted = state.samples.sortBy(_._id.value).reverse
+            val sorted = state.samples.sortBy(_.id.value).reverse
             existing.notices(sorted.toList).totalSampled(state.sampled).save
           }
         }).getOrElse {
           logger.debug(s"Writing new history for ${historyId}")
           Stats.time("historyActions.flushNew") {
             val state = sampler.state
-            val sorted = state.samples.sortBy(_._id.value).reverse
+            val sorted = state.samples.sortBy(_.id.value).reverse
             HistoryRecord.createRecord
               .id(historyId)
               .notices(sorted.toList)

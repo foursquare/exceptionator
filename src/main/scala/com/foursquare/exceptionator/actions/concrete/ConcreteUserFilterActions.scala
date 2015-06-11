@@ -49,7 +49,7 @@ class ConcreteUserFilterActions extends UserFilterActions with IndexActions with
     } catch {
       case _: IllegalArgumentException => None
     }
-    oidOpt.flatMap(oid => UserFilterRecord.where(_._id eqs oid).fetch.headOption)
+    oidOpt.flatMap(oid => UserFilterRecord.where(_.id eqs oid).fetch.headOption)
   }
 
   def remove(id: String, userId: Option[String]) {
@@ -60,6 +60,6 @@ class ConcreteUserFilterActions extends UserFilterActions with IndexActions with
       case _: IllegalArgumentException => None
     }
 
-    oidOpt.map(oid => UserFilterRecord.where(_._id eqs oid).bulkDelete_!!!())
+    oidOpt.map(oid => UserFilterRecord.where(_.id eqs oid).bulkDelete_!!!())
   }
 }

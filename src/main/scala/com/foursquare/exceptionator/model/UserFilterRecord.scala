@@ -3,8 +3,8 @@
 package com.foursquare.exceptionator.model
 
 import com.foursquare.exceptionator.model.io.UserFilterView
-import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord, MongoId}
-import net.liftweb.mongodb.record.field.{BsonRecordListField, MongoCaseClassField, MongoListField}
+import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord}
+import net.liftweb.mongodb.record.field.{BsonRecordListField, MongoCaseClassField, MongoListField, ObjectIdPk}
 import net.liftweb.record.field._
 import net.liftweb.json._
 import org.bson.types.ObjectId
@@ -43,10 +43,10 @@ object FilterType extends Enumeration {
 }
 
 // Record holding configuration for a user's filter
-class UserFilterRecord extends MongoRecord[UserFilterRecord] with MongoId[UserFilterRecord] with UserFilterView {
+class UserFilterRecord extends MongoRecord[UserFilterRecord] with ObjectIdPk[UserFilterRecord] with UserFilterView {
   def meta = UserFilterRecord
 
-  def createTime = new DateTime(id.getTime(), DateTimeZone.UTC).toDate
+  def createTime = new DateTime(id.value.getTime(), DateTimeZone.UTC).toDate
 
   object name extends StringField(this, 255) {
     override def name = "n"
@@ -111,6 +111,6 @@ object UserFilterRecord
   override def collectionName = "user_filters"
 
   override val mongoIndexList = List(
-    UserFilterRecord.index(_._id, Asc),
+    UserFilterRecord.index(_.id, Asc),
     UserFilterRecord.index(_.userId, Asc))
 }

@@ -89,8 +89,8 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     }).toSet
 
     val histograms = getHistograms(ids, now, true, true, true)
-    val notices = NoticeRecord.where(_._id in noticeIds).fetch
-    notices.sortBy(_.id).reverse.map(n => {
+    val notices = NoticeRecord.where(_.id in noticeIds).fetch
+    notices.sortBy(_.id.value).reverse.map(n => {
       val nbSet = n.buckets.value.toSet
       val noticeBuckets = buckets.filter(b => nbSet(b.id))
       val noticeBucketRecordHistograms = histograms.filter(h => nbSet(h.bucket))
