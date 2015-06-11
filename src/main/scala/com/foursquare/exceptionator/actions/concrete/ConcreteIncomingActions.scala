@@ -2,7 +2,7 @@
 
 package com.foursquare.exceptionator.actions.concrete
 
-import com.foursquare.exceptionator.actions.{IncomingActions, HasBucketActions, HasNoticeActions}
+import com.foursquare.exceptionator.actions.{HasBucketActions, HasHistoryActions, HasNoticeActions, IncomingActions}
 import com.foursquare.exceptionator.filter.{BucketSpec, FilteredIncoming, FilteredSaveService,
     PreSaveFilter, ProcessedIncoming}
 import com.foursquare.exceptionator.filter.concrete.FreshBucketFilter
@@ -30,7 +30,7 @@ class FilteredConcreteIncomingActions(service: Service[FilteredIncoming, Process
   def apply(incoming: FilteredIncoming): Future[ProcessedIncoming] = filteredService(incoming)
 }
 
-class ConcreteIncomingActions(services: HasNoticeActions with HasBucketActions)
+class ConcreteIncomingActions(services: HasBucketActions with HasHistoryActions with HasNoticeActions)
     extends Service[FilteredIncoming, ProcessedIncoming] with IncomingActions with Logger {
 
   val saveFuturePool = FuturePool(Executors.newFixedThreadPool(10))
@@ -72,8 +72,10 @@ class ConcreteIncomingActions(services: HasNoticeActions with HasBucketActions)
     val kw = incoming.keywords
     val buckets = incoming.buckets
 
+    val notice = services.noticeActions.save(incoming.incoming, tags, kw, buckets)
+    val incomingId = notice._id.value
 
-    val incomingId = services.noticeActions.save(incoming.incoming, tags, kw, buckets)
+    val historyId = services.historyActions.save(notice)
 
     // Increment /create buckets
     val results = buckets.map(bucket => {

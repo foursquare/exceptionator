@@ -40,6 +40,12 @@
 
   },
 
+  "history": {
+    "flushPeriod": 60,
+    "sampleRate": 50,
+    "sampleWindowSeconds": 60
+  },
+
   "rollingRank": {
     "tokenizers": "(?:\\s|[=?&./,:\"{}$\\-\\(\\)\\[\\]]|%[0-9A-Fa-f][0-9A-Fa-f])+",
     "filterNot": "\\d{1,4}|^\\W*$"
@@ -52,7 +58,7 @@
       ],
       "filterNot": [
         "^com.foursquare.rogue",
-        "^com.foursquare.slashem",         
+        "^com.foursquare.slashem",
         "^com.foursquare.boot.MongoSetup\\$FSQueryValidator"
       ]
     }
