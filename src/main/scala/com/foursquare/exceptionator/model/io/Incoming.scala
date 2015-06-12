@@ -28,7 +28,7 @@ case class Incoming (
   n: Option[Int], // count
   d: Option[Long], //date
   tags: Option[List[String]],
-  id: Option[Int]
+  id: Option[Int] // optional data useful for debugging with tester.py
 ) {
   def structuredBacktrace: List[List[BacktraceLine]] = bt.map(_.split("\n").map(BacktraceLine(_)).toList)
 
