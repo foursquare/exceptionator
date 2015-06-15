@@ -240,7 +240,9 @@ Exceptionator.NoticeList = Backbone.Collection.extend({
     } else if (this.listType == Exceptionator.ListTypes.HISTORY) {
       empty = Exceptionator.Notice.emptyHistogram(new Date(Date.now() - this.timeOffset));
       var mostRecent = this.min(Exceptionator.NoticeList.reverseTimeIterator_);
-      var seriesList = [{label: '', values: mostRecent.histogram(mostRecent.get('hist'))}];
+      if (mostRecent) {
+        seriesList = [{label: '', values: mostRecent.histogram(mostRecent.get('hist'))}];
+      }
     }
 
     var retval = [];
