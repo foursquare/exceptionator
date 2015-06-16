@@ -47,7 +47,7 @@ class ConcreteHistoryActions extends HistoryActions with IndexActions with Logge
       historyId <- samplers.keys
       sampler <- samplers.remove(historyId)
     } {
-      HistoryRecord.where(_.id eqs historyId).get()
+      val saved = HistoryRecord.where(_.id eqs historyId).get()
         .filter(_.sampleRate.value == sampler.size)
         .map(existing => {
           logger.debug(s"Merging histories for ${historyId}")
@@ -72,6 +72,17 @@ class ConcreteHistoryActions extends HistoryActions with IndexActions with Logge
               .save
           }
         }
+
+      HistoryRecord.histogramData.update(saved.id.value.getTime, saved.totalSampled.value)
+    }
+
+    // Delete any cached keys dropped from the capped history collection
+    for {
+      date <- HistoryRecord.select(_.id).orderAsc(_.id).get()
+      time <- HistoryRecord.histogramData.keys
+      if time < date.getTime
+    } {
+      HistoryRecord.histogramData.remove(time)
     }
   }
 

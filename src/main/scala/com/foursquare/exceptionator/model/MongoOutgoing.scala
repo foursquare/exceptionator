@@ -3,6 +3,7 @@ package com.foursquare.exceptionator.model
 
 import com.foursquare.exceptionator.model.io.{BucketId, Outgoing}
 import com.foursquare.rogue.lift.LiftRogue._
+import com.twitter.ostrich.stats.Stats
 import net.liftweb.json._
 import net.liftweb.json.JsonDSL._
 import org.bson.types.ObjectId
@@ -50,24 +51,21 @@ case class MongoOutgoing(id: ObjectId, doc: JValue) extends Outgoing {
     MongoOutgoing(id, JObject(List(JField("bkts", JObject(bucketInfo)))) merge doc)
   }
 
-  def addHistorygrams(): Outgoing = {
+  def addHistorygrams(): Outgoing = Stats.time("history.histograms.compute") {
     val time = new DateTime(id.getTime)
-    val allData = HistoryRecord.where(_.id between (time.minusMonths(1), time))
-      .orderDesc(_.id)
-      .select(_.id, _.totalSampled)
-      .fetch()
-      .map({ case (d, v) => (new DateTime(d), v) })
+    val allData = HistoryRecord.histogramData
+      .filterKeys(t => time.minusMonths(1).getMillis <= t && t <= time.getMillis)
 
     val monthMap = allData
-      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Month.step).toString })
+      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Month.step).toString })
       .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
     val dayMap = allData
-      .filter({ case (d, v) => d.isAfter(time.minusDays(1)) })
-      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Day.step).toString })
+      .filter({ case (t, v) => time.minusDays(1).getMillis < t })
+      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Day.step).toString })
       .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
     val hourMap = allData
-      .filter({ case (d, v) => d.isAfter(time.minusHours(1)) })
-      .groupBy({ case (d, v) => HistoryRecord.roundMod(d.getMillis, HistogramType.Hour.step).toString })
+      .filter({ case (t, v) => time.minusHours(1).getMillis < t })
+      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Hour.step).toString })
       .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
 
     val updated = JObject(List(JField("hist",
