@@ -18,7 +18,7 @@ import java.util.Date
 class NoticeRecord extends MongoRecord[NoticeRecord] with ObjectIdPk[NoticeRecord] {
   def meta = NoticeRecord
 
-  def createDateTime = new DateTime(id.value.getTime(), DateTimeZone.UTC)
+  def createDateTime = new DateTime(id.value.getTimestamp * 1000L, DateTimeZone.UTC)
   def createTime = createDateTime.toDate
 
   object notice extends MongoCaseClassField[NoticeRecord, Incoming](this) {

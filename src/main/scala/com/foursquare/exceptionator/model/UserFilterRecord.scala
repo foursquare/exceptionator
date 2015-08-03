@@ -46,7 +46,7 @@ object FilterType extends Enumeration {
 class UserFilterRecord extends MongoRecord[UserFilterRecord] with ObjectIdPk[UserFilterRecord] with UserFilterView {
   def meta = UserFilterRecord
 
-  def createTime = new DateTime(id.value.getTime(), DateTimeZone.UTC).toDate
+  def createTime = new DateTime(id.value.getTimestamp * 1000L, DateTimeZone.UTC).toDate
 
   object name extends StringField(this, 255) {
     override def name = "n"

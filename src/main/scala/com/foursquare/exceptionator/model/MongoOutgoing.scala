@@ -15,7 +15,7 @@ object MongoOutgoing {
     val ast = nr.asJValue
     val merged = {
       (("id" -> nr.id.toString) ~
-      ("d" -> nr.id.value.getTime) ~
+      ("d" -> nr.id.value.getTimestamp * 1000L) ~
       ("kw" -> nr.keywords.value) ~
       ("tags" -> nr.tags.value) ~
       ("bkts" -> nr.buckets.value.map(id => {
@@ -52,7 +52,7 @@ case class MongoOutgoing(id: ObjectId, doc: JValue) extends Outgoing {
   }
 
   def addHistorygrams(): Outgoing = Stats.time("history.histograms.compute") {
-    val time = new DateTime(id.getTime)
+    val time = new DateTime(id.getTimestamp * 1000L)
     val allData = HistoryRecord.histogramData
       .filterKeys(t => time.minusMonths(1).getMillis <= t && t <= time.getMillis)
 

@@ -127,7 +127,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
   def save(incomingId: ObjectId, incoming: Incoming, bucket: BucketId, maxRecent: Int): SaveResult = {
     val n = incoming.n.getOrElse(1)
 
-    val dateTime = new DateTime(incomingId.getTime)
+    val dateTime = new DateTime(incomingId.getTimestamp * 1000L)
     val month = Hash.fieldNameEncode(dateTime.getMonthOfYear)
     val day = Hash.fieldNameEncode(dateTime.getDayOfMonth)
     val hour = Hash.fieldNameEncode(dateTime.getHourOfDay)
@@ -137,7 +137,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     val existing = Stats.time("bucketActions.save.updateBucket") {
       BucketRecord.where(_._id eqs bucketKey)
         .findAndModify(_.noticeCount inc n)
-        .and(_.lastSeen setTo incomingId.getTime)
+        .and(_.lastSeen setTo incomingId.getTimestamp * 1000L)
         .and(_.lastVersion setTo incoming.v)
         .and(_.notices push incomingId).upsertOne()
     }
@@ -145,7 +145,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
     if (!existing.isDefined) {
       Stats.time("bucketActions.save.upsertBucket") {
         BucketRecord.where(_._id eqs bucketKey)
-         .modify(_.firstSeen setTo incomingId.getTime)
+         .modify(_.firstSeen setTo incomingId.getTimestamp * 1000L)
          .modify(_.firstVersion setTo incoming.v).upsertOne()
       }
     }

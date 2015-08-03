@@ -115,7 +115,7 @@ class ConcreteIncomingActions(services: HasBucketActions with HasHistoryActions 
 
     // A bit racy, but only approximation is needed.  Want to trim histograms
     // about every hour
-    val now = incomingId.getTime
+    val now = incomingId.getTimestamp * 1000L
     if (now > currentTime) {
       currentTime = now
       if (currentTime - lastHistogramTrim > (60L/*mins*/ * 60/*secs*/ * 1000)) {

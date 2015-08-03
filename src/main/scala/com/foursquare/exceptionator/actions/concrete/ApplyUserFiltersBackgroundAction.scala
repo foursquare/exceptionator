@@ -57,11 +57,11 @@ class ApplyUserFiltersBackgroundAction (
         processedIncoming.id.map(id => {
           // Update last matched time:
           mongoCmdFuturePool({
-            UserFilterRecord.where(_.id eqs f.id.value).modify(_.lastMatched setTo id.getTime).updateOne()
+            UserFilterRecord.where(_.id eqs f.id.value).modify(_.lastMatched setTo id.getTimestamp * 1000L).updateOne()
           })
 
           // update local cache (racy, but I think this is acceptable)
-          f.lastMatched(id.getTime)
+          f.lastMatched(id.getTimestamp * 1000L)
 
           // Add the notice to the filter's bucket
           val bucket = BucketId("uf", f.id.toString)
@@ -109,7 +109,7 @@ class ApplyUserFiltersBackgroundAction (
       case PowerOfTwoTrigger => Future.value(filterBucket.count.exists(c => (c & (c - 1)) == 0))
       case PeriodicTrigger =>
         Future.value(filter.triggerPeriod.valueBox.map((triggerPeriod: Int) => {
-          processedIncoming.id.exists(_.getTime > filter.lastMatched.value + triggerPeriod * 60L * 1000L)
+          processedIncoming.id.exists(_.getTimestamp * 1000L > filter.lastMatched.value + triggerPeriod * 60L * 1000L)
         }).getOrElse({
           logger.error("Expected a triggerPeriod on %s".format(filter))
           false
@@ -117,7 +117,10 @@ class ApplyUserFiltersBackgroundAction (
       case ThresholdTrigger =>
         // Get a list of 60 ints (past hour) head is 60 mins ago, tail is now
         mongoCmdFuturePool(
-          services.bucketActions.lastHourHistogram(filterBucket, new DateTime(processedIncoming.id.get.getTime))).map(h => {
+          services.bucketActions.lastHourHistogram(
+            filterBucket,
+            new DateTime(processedIncoming.id.get.getTimestamp * 1000L))
+        ).map(h => {
           (for {
             triggerPeriod <- filter.triggerPeriod.valueBox
             thresholdLevel <- filter.thresholdLevel.valueBox
@@ -134,7 +137,7 @@ class ApplyUserFiltersBackgroundAction (
             } else {
               1
             }
-            triggerMute(filter, processedIncoming.id.get.getTime + mutePeriod * 60L * 1000L)
+            triggerMute(filter, (processedIncoming.id.get.getTimestamp + mutePeriod * 60) * 1000L)
 
             isTriggered
           }).exists(_ == true)
@@ -162,7 +165,7 @@ class ApplyUserFiltersBackgroundAction (
       Future.collect(applied
         // filter mute
         .filter { case (f, b) =>
-           f.muteUntil.valueBox.map(m => processedIncoming.id.exists(_.getTime > m)).getOrElse(true)
+           f.muteUntil.valueBox.map(m => processedIncoming.id.exists(_.getTimestamp * 1000L > m)).getOrElse(true)
         }.map {
         case (f, b) => meetsTriggerCriteria(processedIncoming, f, b).map((isTriggered: Boolean) => {
           logger.info("isTriggered: %s %s".format(isTriggered, f))
