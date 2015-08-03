@@ -20,7 +20,7 @@ libraryDependencies ++= Seq(
   "com.foursquare"          %% "rogue-core"           % "3.0.0-beta13.1" intransitive(),
   "com.foursquare"          %% "rogue-lift"           % "3.0.0-beta13.1" intransitive(),
   "com.foursquare"          %% "rogue-index"          % "3.0.0-beta13.1" intransitive(),
-  "net.liftweb"             %% "lift-mongodb-record"  % "2.5.1-fs-a",
+  "net.liftweb"             %% "lift-mongodb-record"  % "2.5.1",
   "com.googlecode.concurrentlinkedhashmap" % "concurrentlinkedhashmap-lru" % "1.2",
   "com.novocode"            %  "junit-interface"      % "0.7"       % "test",
   "com.twitter"             %% "finagle-http"         % "6.16.0",
@@ -31,8 +31,8 @@ libraryDependencies ++= Seq(
   "org.scalaj"              %% "scalaj-collection"    % "1.5",
   "org.joda"                %  "joda-convert"         % "1.2",
   "org.mongodb"             %  "mongo-java-driver"    % "2.13.2",
-  "org.scala-tools.testing" %% "specs"                % "1.6.11-fs"     % "test",
-  "joda-time"               %  "joda-time"            % "2.2_2013h",
+  "org.scala-tools.testing" %% "specs"                % "1.6.9"     % "test",
+  "joda-time"               %  "joda-time"            % "2.2",
   "javax.mail"              %  "mail"                 % "1.4.4",
   "junit"                   %  "junit"                % "4.10"     % "test"
 )
