@@ -34,7 +34,7 @@ class NoticeRecord extends MongoRecord[NoticeRecord] with ObjectIdPk[NoticeRecor
     override def name = "kw"
     // mongo 2.6 and above enforces an index key length of < 1024 bytes. do that filtering here
     override def setBox(in: Box[List[String]]): Box[List[String]] = {
-      super.setBox(in.map(_.filter(_.length < 128)))
+      super.setBox(in.map(_.filter(_.length < 256)))
     }
   }
 
