@@ -2,6 +2,7 @@
 
 package com.foursquare.exceptionator.actions
 
+import com.foursquare.exceptionator.model.BucketRecordHistogram
 import com.foursquare.exceptionator.model.io.{BucketId, Incoming, Outgoing}
 import org.bson.types.ObjectId
 import org.joda.time.DateTime
@@ -15,6 +16,12 @@ case class SaveResult(bucket: BucketId, oldResult: Option[BucketId], noticesToRe
 trait BucketActions extends IndexActions {
   def get(ids: List[String], noticesPerBucketLimit: Option[Int], now: DateTime): List[Outgoing]
   def get(name: String, key: String, now: DateTime): List[Outgoing]
+  def getHistograms(
+    ids: List[String],
+    now: DateTime,
+    includeMonth: Boolean,
+    includeDay: Boolean,
+    includeHour: Boolean): List[BucketRecordHistogram]
   def recentKeys(name: String, limit: Option[Int]): List[String]
   def lastHourHistogram(id: BucketId, now: DateTime): List[Int]
   def save(incomingId: ObjectId, incoming: Incoming, bucket: BucketId, maxRecent: Int): SaveResult

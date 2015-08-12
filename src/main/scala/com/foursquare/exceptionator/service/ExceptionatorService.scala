@@ -141,7 +141,7 @@ object ExceptionatorServer extends Logger {
         with HasPluginLoaderService
         with HasUserFilterActions {
       lazy val bucketActions = new ConcreteBucketActions
-      lazy val historyActions = new ConcreteHistoryActions
+      lazy val historyActions = new ConcreteHistoryActions(this)
       lazy val noticeActions = new ConcreteNoticeActions
       lazy val pluginLoader = new ConcretePluginLoaderService(this)
       lazy val userFilterActions = new ConcreteUserFilterActions

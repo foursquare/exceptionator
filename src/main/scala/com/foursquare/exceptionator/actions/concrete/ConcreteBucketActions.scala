@@ -181,7 +181,7 @@ class ConcreteBucketActions extends BucketActions with IndexActions with Logger 
       noticesToRemove)
   }
 
-  def deleteOldHistograms(time: Long, doIt: Boolean = true) {
+  def deleteOldHistograms(time: Long, doIt: Boolean = true): Unit = {
     val dateTime = new DateTime(time)
     val oldMonth = dateTime.minusMonths(2)
     val oldDay = dateTime.minusDays(2)

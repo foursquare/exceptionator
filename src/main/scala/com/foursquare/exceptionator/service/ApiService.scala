@@ -9,7 +9,6 @@ import com.foursquare.exceptionator.model.io.{Incoming, Outgoing, UserFilterView
 import com.foursquare.exceptionator.util.{Config, Logger}
 import com.twitter.finagle.http.{Response, Request}
 import com.twitter.finagle.Service
-import com.twitter.ostrich.stats.Stats
 import com.twitter.util.{Future, FuturePool, Throw}
 import java.net.URLDecoder
 import java.util.concurrent.Executors
@@ -21,7 +20,7 @@ import scalaj.collection.Imports._
 object ApiHttpService {
    val Notices = """/api/notices(?:/([^/]+)(?:/([^/?&=]+))?)?""".r
    val Filters = """/api/filters(?:/([^/]+))?""".r
-   val History = """/api/history(?:/(\d+))?""".r
+   val History = """/api/history/([^/]+)(?:/([^/]+))?/(\d+)""".r
 }
 
 object InternalResponse {
@@ -73,8 +72,9 @@ class ApiHttpService(
             InternalResponse.notFound
         }
       case ApiHttpService.Notices(name, key) =>
-        notices(Option(name).map(decodeURIComponent(_)), Option(key).map(decodeURIComponent), request)
-      case ApiHttpService.History(timestamp) => history(timestamp.toLong, request)
+        notices(Option(name).map(decodeURIComponent), Option(key).map(decodeURIComponent), request)
+      case ApiHttpService.History(name, key, timestamp) =>
+        history(Option(name).map(decodeURIComponent), Option(key).map(decodeURIComponent), timestamp.toLong, request)
       case "/api/search" =>
         search(decodeURIComponent(request.getParam("q")).toLowerCase, request)
       case _ =>
@@ -173,9 +173,45 @@ class ApiHttpService(
     InternalResponse(generate(values))
   }
 
-  def history(timestamp: Long, request: ExceptionatorRequest): Future[InternalResponse] = {
+  def bucketHistory(
+    bucketName: String,
+    bucketKey: String,
+    timestamp: Long,
+    request: Request
+  ): Future[InternalResponse] = {
     InternalResponse(apiFuturePool({
-      Outgoing.compact(services.historyActions.get(new DateTime(timestamp), limitParam(request)))
+      val outgoingElems = services.historyActions.get(
+        bucketName,
+        bucketKey,
+        new DateTime(timestamp),
+        limitParam(request))
+      Outgoing.compact(outgoingElems)
     }))
   }
+
+  // NOTE: This differs from the realtime functionality in that it does not
+  //       gurantee a single notice per matching bucket, something the history
+  //       record format does not provide an easy/performant way to enforce.
+  def groupHistory(bucketName: String, timestamp: Long, request: Request): Future[InternalResponse] = {
+    InternalResponse(apiFuturePool({
+      val limit = limitParam(request)
+      val outgoingElems = services.historyActions.get(bucketName, new DateTime(timestamp), limitParam(request))
+      Outgoing.compact(outgoingElems)
+    }))
+  }
+
+  def history(
+    bucketName: Option[String],
+    bucketId: Option[String],
+    timestamp: Long,
+    request: Request
+  ): Future[InternalResponse] = {
+    (bucketName, bucketId) match {
+      case (None, None) => groupHistory("s", timestamp, request)
+      case (Some(n), None) => groupHistory(n, timestamp, request)
+      case (Some(n), Some(k)) => bucketHistory(n, k, timestamp, request)
+      case _ => InternalResponse.notFound
+    }
+  }
+
 }
