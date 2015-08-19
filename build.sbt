@@ -2,7 +2,7 @@ organization := "com.foursquare"
 
 name := "exceptionator"
 
-version := "3.0-beta4"
+version := "3.0-beta5"
 
 scalaVersion := "2.10.5"
 
