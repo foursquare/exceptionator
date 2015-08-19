@@ -29,6 +29,7 @@ object MongoOutgoing {
 
 
 case class MongoOutgoing(id: ObjectId, doc: JValue) extends Outgoing {
+  // Note: this will overwrite any buckets on the existing doc with those given as arguments
   def addBuckets(buckets: List[BucketRecord], histograms: List[BucketRecordHistogram], now: DateTime): Outgoing = {
     val bucketInfo: List[JField] = buckets.map(bucket => {
       val id = BucketId(bucket.id)
@@ -49,31 +50,5 @@ case class MongoOutgoing(id: ObjectId, doc: JValue) extends Outgoing {
           ("m" -> histoMaps.get(HistogramType.Month))))
     })
     MongoOutgoing(id, JObject(List(JField("bkts", JObject(bucketInfo)))) merge doc)
-  }
-
-  def addHistorygrams(): Outgoing = Stats.time("history.histograms.compute") {
-    val time = new DateTime(id.getTimestamp * 1000L)
-    val allData = HistoryRecord.histogramData
-      .filterKeys(t => time.minusMonths(1).getMillis <= t && t <= time.getMillis)
-
-    val monthMap = allData
-      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Month.step).toString })
-      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
-    val dayMap = allData
-      .filter({ case (t, v) => time.minusDays(1).getMillis < t })
-      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Day.step).toString })
-      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
-    val hourMap = allData
-      .filter({ case (t, v) => time.minusHours(1).getMillis < t })
-      .groupBy({ case (t, v) => HistoryRecord.roundMod(t, HistogramType.Hour.step).toString })
-      .mapValues(_.foldLeft(0)({ case (total, (_, v)) => total + v }))
-
-    val updated = JObject(List(JField("hist",
-      ("h" -> hourMap) ~
-      ("d" -> dayMap) ~
-      ("m" -> monthMap)
-    ))) merge doc
-
-    MongoOutgoing(id, updated)
   }
 }

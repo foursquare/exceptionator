@@ -55,7 +55,8 @@ class ConcreteIncomingActions(services: HasBucketActions with HasHistoryActions 
   }
 
   def doMaintenance(now: Long) {
-    services.bucketActions.deleteOldHistograms(now, true)
+    val histogramOldTime = services.historyActions.oldestId.map(_.getMillis).getOrElse(now)
+    services.bucketActions.deleteOldHistograms(histogramOldTime, true)
 
     // Find really stale buckets that haven't been updated for 60 days. And delete them
     Stats.time("incomingActions.deleteOldBuckets") {

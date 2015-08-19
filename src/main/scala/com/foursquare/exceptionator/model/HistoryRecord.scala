@@ -4,7 +4,7 @@ package com.foursquare.exceptionator.model
 
 import com.foursquare.exceptionator.model.io.Incoming
 import com.foursquare.exceptionator.util.Config
-import com.foursquare.index.{Asc, IndexedRecord}
+import com.foursquare.index.{Asc, Desc, IndexedRecord}
 import com.foursquare.rogue._
 import com.foursquare.rogue.lift.LiftRogue._
 import com.mongodb.{BasicDBList, DBObject}
@@ -12,7 +12,7 @@ import com.twitter.ostrich.stats.Stats
 import java.util.concurrent.ConcurrentHashMap
 import net.liftweb.common.{Box, Full}
 import net.liftweb.mongodb.record.{MongoRecord, MongoMetaRecord}
-import net.liftweb.mongodb.record.field.{BsonRecordListField, DateField}
+import net.liftweb.mongodb.record.field.{BsonRecordListField, DateField, MongoListField}
 import net.liftweb.record.field._
 import org.joda.time.DateTime
 import scala.collection.JavaConverters.mapAsScalaConcurrentMapConverter
@@ -30,6 +30,14 @@ class HistoryRecord extends MongoRecord[HistoryRecord] {
 
   object notices extends BsonRecordListField[HistoryRecord, NoticeRecord](this, NoticeRecord) {
     override def name = "n"
+  }
+
+  object buckets extends MongoListField[HistoryRecord, String](this) {
+    override def name = "b"
+    // mongo 2.6 and above enforces an index key length of < 1024 bytes. do that filtering here
+    override def setBox(in: Box[List[String]]): Box[List[String]] = {
+      super.setBox(in.map(_.filter(_.length < 256)))
+    }
   }
 
   object sampleRate extends IntField(this) {
@@ -52,21 +60,11 @@ object HistoryRecord extends HistoryRecord with MongoMetaRecord[HistoryRecord] w
   val windowSecs = Config.opt(_.getInt("history.sampleWindowSeconds")).getOrElse(60)
   val windowMillis = windowSecs * 1000L
 
-  // cache data for history histograms so we don't do expensive mongo calls on every request
-  // Note: this will go away once the histogram system is overhauled to support history itself
-  lazy val histogramData = Stats.time("history.histograms.loadFromDb") {
-    val empty = (new ConcurrentHashMap[Long, Int]).asScala
-    val allPairs = HistoryRecord
-      .select(_.id, _.totalSampled)
-      .fetchBatch(1000)(_.map({ case (d, v) => d.getTime -> v }))
-    empty ++= allPairs
-    empty
-  }
-
   // round <base> down to 0 mod <mod>
   def roundMod(base: Long, mod: Long): Long = (base/mod) * mod
   def idForTime(date: DateTime): DateTime = new DateTime(roundMod(date.getMillis, windowMillis))
 
   override val mongoIndexList = List(
-    HistoryRecord.index(_.id, Asc))
+    HistoryRecord.index(_.id, Asc),
+    HistoryRecord.index(_.buckets, Asc, _.id, Desc))
 }
