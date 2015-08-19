@@ -337,9 +337,9 @@ Exceptionator.NoticeListView = Backbone.View.extend({
   },
 
   handlePlotClick: function (e, pos, item) {
-    var url = '/history/' + this.collection.bucketName + '/';
+    var url = '/history/' + encodeURIComponent(this.collection.bucketName) + '/';
     if (this.collection.bucketKey) {
-      url += this.collection.bucketKey + '/';
+      url += encodeURIComponent(this.collection.bucketKey) + '/';
     }
     url += Math.floor(pos.x);
     this.handleClick(e, url);
